@@ -2,6 +2,8 @@
 use spirv_std::glam::{vec3, Vec3};
 use spirv_std::num_traits::Float;
 
+use crate::math::random_in_unit_disk;
+use crate::rand::DefaultRng;
 use crate::ray::Ray;
 
 #[derive(Copy, Clone)]
@@ -60,8 +62,8 @@ impl Camera {
         }
     }
 
-    pub fn get_ray(&self, s: f32, t: f32 /*, rng: &mut impl Rng*/) -> Ray {
-        let rd = vec3(0.0, 0.0, 0.0); // self.lens_radius * random_in_unit_disk(rng);
+    pub fn get_ray(&self, s: f32, t: f32, rng: &mut DefaultRng) -> Ray {
+        let rd = self.lens_radius * random_in_unit_disk(rng);
         let offset = self.u * rd.x + self.v * rd.y;
 
         Ray {
@@ -69,7 +71,7 @@ impl Camera {
             direction: (self.lower_left_corner + s * self.horizontal + t * self.vertical
                 - self.origin
                 - offset),
-            time: 0.0, //rng.gen_range(self.time0..self.time1),
+            time: rng.next_f32_range(self.time0, self.time1),
         }
     }
 }

@@ -6,7 +6,7 @@
 )]
 
 use camera::Camera;
-use rand::RNG;
+use rand::DefaultRng;
 use ray::Ray;
 use spirv_std::glam::{vec3, vec4, UVec3, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
@@ -98,7 +98,7 @@ pub fn main_cs(
         return;
     }
 
-    let mut rng = RNG::new(y * constants.width + x);
+    let mut rng = DefaultRng::new(y * constants.width + x);
     let scale = rng.next_f32();
 
     out[(y * constants.width + x) as usize] = (Vec3::ONE * scale).extend(1.0);

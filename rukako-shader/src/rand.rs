@@ -41,6 +41,10 @@ impl PCG32si {
         let value = value >> (float_size - precision);
         scale * value as f32
     }
+
+    pub fn next_f32_range(&mut self, min: f32, max: f32) -> f32 {
+        min + (max - min) * self.next_f32()
+    }
 }
 
-pub type RNG = PCG32si;
+pub type DefaultRng = PCG32si;
