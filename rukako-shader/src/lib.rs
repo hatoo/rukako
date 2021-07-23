@@ -5,17 +5,27 @@
     register_attr(spirv)
 )]
 
-use spirv_std::glam::{const_vec3, vec2, vec3, Vec2, Vec3, Vec4};
+use camera::Camera;
+use spirv_std::glam::{vec2, Vec2, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 
 use bytemuck::{Pod, Zeroable};
+
+pub mod camera;
+pub mod math;
+pub mod ray;
+
+fn f() -> Option<f32> {
+    Some(0.2)
+}
 
 #[derive(Copy, Clone, Pod, Zeroable)]
 #[repr(C)]
 pub struct ShaderConstants {
     pub width: u32,
     pub height: u32,
+    // pub camera: Camera,
 }
 
 #[spirv(fragment)]
@@ -28,7 +38,9 @@ pub fn main_fs(
     let g = in_frag_coord.y as f32 / (constants.height - 1) as f32;
     *output = in_frag_coord;
     output.x = r;
-    output.y = g;
+    if let Some(a) = f() {
+        output.y = a;
+    }
 }
 
 #[spirv(vertex)]
