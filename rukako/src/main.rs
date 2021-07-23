@@ -36,34 +36,6 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         flags: wgpu::ShaderFlags::default(),
     });
 
-    /*
-    let buffer_dimensions = BufferDimensions::new(width, height);
-
-    let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: None,
-        size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
-        usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-        mapped_at_creation: false,
-    });
-
-    let texture_extent = wgpu::Extent3d {
-        width: buffer_dimensions.width as u32,
-        height: buffer_dimensions.height as u32,
-        depth_or_array_layers: 1,
-    };
-
-    // The render pipeline renders data into this texture
-    let texture = device.create_texture(&wgpu::TextureDescriptor {
-        size: texture_extent,
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
-        label: None,
-    });
-    */
-
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: None,
         entries: &[
@@ -109,7 +81,7 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
     });
 
     let storage_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Collatz Conjecture Input"),
+        label: Some("Output Image"),
         contents: &src,
         usage: wgpu::BufferUsage::STORAGE
             | wgpu::BufferUsage::COPY_DST
