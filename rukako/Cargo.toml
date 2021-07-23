@@ -7,12 +7,14 @@ edition = "2018"
 
 [dependencies]
 wgpu = "0.8.1"
-bytemuck = { version = "1.4", features = ["derive"] }
+bytemuck = { version = "1.6.3", features = ["derive"] }
 env_logger = "0.8"
 pollster = "0.2"
 image = "0.23"
 anyhow = "1.0"
 png = "0.16.8"
+
+rukako-shader = { path = "../rukako-shader" }
 
 [build-dependencies]
 spirv-builder = { git = "https://github.com/EmbarkStudios/rust-gpu" }

@@ -1,5 +1,7 @@
 use std::{borrow::Cow, fs::File, io::Write, mem::size_of, path::Path};
 
+use rukako_shader::ShaderConstants;
+
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));
 
 async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>) {
@@ -14,8 +16,11 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
-                features: wgpu::Features::empty(),
-                limits: wgpu::Limits::default(),
+                features: wgpu::Features::PUSH_CONSTANTS,
+                limits: wgpu::Limits {
+                    max_push_constant_size: 256,
+                    ..wgpu::Limits::default()
+                },
             },
             None,
         )
@@ -58,7 +63,10 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
         bind_group_layouts: &[],
-        push_constant_ranges: &[],
+        push_constant_ranges: &[wgpu::PushConstantRange {
+            stages: wgpu::ShaderStage::all().to_owned(),
+            range: 0..std::mem::size_of::<ShaderConstants>() as u32,
+        }],
     });
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -81,6 +89,11 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
 
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
+    let push_constants = ShaderConstants {
+        width: width as u32,
+        height: height as u32,
+    };
+
     let mut encoder =
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
     {
@@ -97,6 +110,11 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
             depth_stencil_attachment: None,
         });
         rpass.set_pipeline(&render_pipeline);
+        rpass.set_push_constants(
+            wgpu::ShaderStage::all(),
+            0,
+            bytemuck::bytes_of(&push_constants),
+        );
         rpass.draw(0..3, 0..1);
     }
 

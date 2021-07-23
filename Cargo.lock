@@ -1115,6 +1115,7 @@ dependencies = [
  "image",
  "png",
  "pollster",
+ "rukako-shader",
  "spirv-builder",
  "wgpu",
 ]
@@ -1123,6 +1124,7 @@ dependencies = [
 name = "rukako-shader"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "spirv-std",
 ]
 

@@ -5,14 +5,30 @@
     register_attr(spirv)
 )]
 
+use spirv_std::glam::{const_vec3, vec2, vec3, Vec2, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 
-use spirv_std::glam::{const_vec3, vec2, vec3, Vec2, Vec3, Vec4};
+use bytemuck::{Pod, Zeroable};
+
+#[derive(Copy, Clone, Pod, Zeroable)]
+#[repr(C)]
+pub struct ShaderConstants {
+    pub width: u32,
+    pub height: u32,
+}
 
 #[spirv(fragment)]
-pub fn main_fs(#[spirv(frag_coord)] in_frag_coord: Vec4, output: &mut Vec4) {
+pub fn main_fs(
+    #[spirv(frag_coord)] in_frag_coord: Vec4,
+    #[spirv(push_constant)] constants: &ShaderConstants,
+    output: &mut Vec4,
+) {
+    let r = in_frag_coord.x as f32 / (constants.width - 1) as f32;
+    let g = in_frag_coord.y as f32 / (constants.height - 1) as f32;
     *output = in_frag_coord;
+    output.x = r;
+    output.y = g;
 }
 
 #[spirv(vertex)]
