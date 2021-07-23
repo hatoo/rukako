@@ -5,24 +5,15 @@
     register_attr(spirv)
 )]
 
-use camera::Camera;
+use spirv_std::glam::{vec4, UVec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
-use spirv_std::{
-    arch::control_barrier,
-    glam::{vec2, vec4, UVec3, Vec2, Vec3, Vec4},
-    memory::Semantics,
-};
 
 use bytemuck::{Pod, Zeroable};
 
 pub mod camera;
 pub mod math;
 pub mod ray;
-
-fn f() -> Option<f32> {
-    Some(0.2)
-}
 
 #[derive(Copy, Clone, Pod, Zeroable)]
 #[repr(C)]
@@ -43,6 +34,7 @@ pub struct ShaderConstants {
     */
 }
 
+/*
 #[spirv(fragment)]
 pub fn main_fs(
     #[spirv(frag_coord)] in_frag_coord: Vec4,
@@ -66,6 +58,7 @@ pub fn main_vs(#[spirv(vertex_index)] vert_idx: i32, #[spirv(position)] builtin_
 
     *builtin_pos = pos.extend(0.0).extend(1.0);
 }
+*/
 
 // LocalSize/numthreads of (x = 64, y = 1, z = 1)
 #[spirv(compute(threads(8, 8, 1)))]
@@ -74,9 +67,6 @@ pub fn main_cs(
     #[spirv(push_constant)] constants: &ShaderConstants,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] out: &mut [Vec4],
 ) {
-    // let index = id.x as usize;
-    // prime_indices[index] = index as u32;
-
     let x = id.x;
     let y = id.y;
 
@@ -88,16 +78,6 @@ pub fn main_cs(
         return;
     }
 
-    let id = y * constants.width + x;
     let r = x as f32 / (constants.width - 1) as f32;
-    unsafe {
-        control_barrier::<0, 0, { Semantics::NONE.bits() }>();
-        for i in 0..constants.width * constants.height {
-            if i == id {
-                out[0].x += 1.0;
-            }
-            control_barrier::<1, 0, { Semantics::NONE.bits() }>();
-        }
-        // out[(y * constants.width + x) as usize] = vec4(r, 0.0, 1.0, 1.0);
-    }
+    out[(y * constants.width + x) as usize] = vec4(r, 0.0, 1.0, 1.0);
 }

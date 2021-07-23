@@ -3,7 +3,6 @@ use spirv_std::glam::{vec3, Vec3};
 use spirv_std::num_traits::Float;
 
 use crate::ray::Ray;
-use bytemuck::{Pod, Zeroable};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
