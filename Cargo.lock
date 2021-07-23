@@ -1117,6 +1117,7 @@ dependencies = [
  "pollster",
  "rukako-shader",
  "spirv-builder",
+ "spirv-std",
  "wgpu",
 ]
 
