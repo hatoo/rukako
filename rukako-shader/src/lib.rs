@@ -5,9 +5,12 @@
     register_attr(spirv)
 )]
 
-use spirv_std::glam::{vec4, UVec3, Vec4};
+use camera::Camera;
+use ray::Ray;
+use spirv_std::glam::{vec3, vec4, UVec3, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
+use spirv_std::num_traits::FloatConst;
 
 use bytemuck::{Pod, Zeroable};
 
@@ -60,6 +63,21 @@ pub fn main_vs(#[spirv(vertex_index)] vert_idx: i32, #[spirv(position)] builtin_
 }
 */
 
+fn ray_color(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
+    let oc = ray.origin - center;
+    let a = ray.direction.dot(ray.direction);
+    let b = 2.0 * oc.dot(ray.direction);
+    let c = oc.dot(oc) - radius * radius;
+
+    let discriminant = b * b - 4.0 * a * c;
+
+    if discriminant > 0.0 {
+        vec3(1.0, 0.0, 0.0)
+    } else {
+        vec3(0.5, 0.5, 0.5)
+    }
+}
+
 // LocalSize/numthreads of (x = 64, y = 1, z = 1)
 #[spirv(compute(threads(8, 8, 1)))]
 pub fn main_cs(
@@ -78,6 +96,24 @@ pub fn main_cs(
         return;
     }
 
-    let r = x as f32 / (constants.width - 1) as f32;
-    out[(y * constants.width + x) as usize] = vec4(r, 0.0, 1.0, 1.0);
+    let camera = Camera::new(
+        vec3(0.0, 0.0, 0.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 1.0, 0.0),
+        90.0 / 180.0 * f32::PI(),
+        constants.width as f32 / constants.height as f32,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+    );
+
+    let u = x as f32 / (constants.width - 1) as f32;
+    let v = y as f32 / (constants.height - 1) as f32;
+
+    let ray = camera.get_ray(u, v);
+    let color = ray_color(vec3(0.0, 0.0, 1.0), 0.5, &ray);
+
+    // let r = x as f32 / (constants.width - 1) as f32;
+    out[(y * constants.width + x) as usize] = color.extend(1.0);
 }
