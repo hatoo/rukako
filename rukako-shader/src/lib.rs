@@ -6,6 +6,7 @@
 )]
 
 use camera::Camera;
+use rand::RNG;
 use ray::Ray;
 use spirv_std::glam::{vec3, vec4, UVec3, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
@@ -16,6 +17,7 @@ use bytemuck::{Pod, Zeroable};
 
 pub mod camera;
 pub mod math;
+pub mod rand;
 pub mod ray;
 
 #[derive(Copy, Clone, Pod, Zeroable)]
@@ -96,6 +98,11 @@ pub fn main_cs(
         return;
     }
 
+    let mut rng = RNG::new(y * constants.width + x);
+    let scale = rng.next_f32();
+
+    out[(y * constants.width + x) as usize] = (Vec3::ONE * scale).extend(1.0);
+    /*
     let camera = Camera::new(
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 0.0, 1.0),
@@ -114,6 +121,9 @@ pub fn main_cs(
     let ray = camera.get_ray(u, v);
     let color = ray_color(vec3(0.0, 0.0, 1.0), 0.5, &ray);
 
+    // let mut rng = Pcg32::
+
     // let r = x as f32 / (constants.width - 1) as f32;
     out[(y * constants.width + x) as usize] = color.extend(1.0);
+    */
 }
