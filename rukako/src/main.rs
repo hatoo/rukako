@@ -1,19 +1,9 @@
-use std::{borrow::Cow, fs::File, io::Write, mem::size_of};
-use winit::{
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::Window,
-};
+use std::{borrow::Cow, fs::File, io::Write, mem::size_of, path::Path};
 
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));
 
-async fn run() {
-    // let size = window.inner_size();
-    let width = 600;
-    let height = 400;
-
+async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>) {
     let instance = wgpu::Instance::new(wgpu::BackendBit::all());
-    // let surface = unsafe { instance.create_surface(&window) };
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions::default())
         .await
@@ -71,8 +61,6 @@ async fn run() {
         push_constant_ranges: &[],
     });
 
-    // let swapchain_format = adapter.get_swap_chain_preferred_format(&surface).unwrap();
-
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
         layout: Some(&pipeline_layout),
@@ -91,24 +79,6 @@ async fn run() {
         multisample: wgpu::MultisampleState::default(),
     });
 
-    /*
-    let mut sc_desc = wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
-        format: swapchain_format,
-        width: width,
-        height: height,
-        present_mode: wgpu::PresentMode::Mailbox,
-    };
-
-    let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
-    */
-
-    /*
-    let frame = swap_chain
-        .get_current_frame()
-        .expect("Failed to acquire next swap chain texture")
-        .output;
-        */
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
     let mut encoder =
@@ -127,7 +97,6 @@ async fn run() {
             depth_stencil_attachment: None,
         });
         rpass.set_pipeline(&render_pipeline);
-        // rpass.set_vertex_buffer(0, vertex_buf.slice(..));
         rpass.draw(0..3, 0..1);
     }
 
@@ -162,7 +131,7 @@ async fn run() {
         let padded_buffer = buffer_slice.get_mapped_range();
 
         let mut png_encoder = png::Encoder::new(
-            File::create("out.png").unwrap(),
+            File::create(output_png_file_name).unwrap(),
             buffer_dimensions.width as u32,
             buffer_dimensions.height as u32,
         );
@@ -187,68 +156,11 @@ async fn run() {
 
         output_buffer.unmap();
     }
-
-    /*
-    event_loop.run(move |event, _, control_flow| {
-        // Have the closure take ownership of the resources.
-        // `event_loop.run` never returns, therefore we must do this to ensure
-        // the resources are properly cleaned up.
-        let _ = (&instance, &adapter, &shader, &pipeline_layout);
-
-        *control_flow = ControlFlow::Wait;
-        match event {
-            Event::WindowEvent {
-                event: WindowEvent::Resized(size),
-                ..
-            } => {
-                // Recreate the swap chain with the new size
-                sc_desc.width = size.width.max(1);
-                sc_desc.height = size.height.max(1);
-                swap_chain = device.create_swap_chain(&surface, &sc_desc);
-            }
-            Event::RedrawRequested(_) => {
-                let frame = swap_chain
-                    .get_current_frame()
-                    .expect("Failed to acquire next swap chain texture")
-                    .output;
-                let mut encoder =
-                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-                {
-                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: None,
-                        color_attachments: &[wgpu::RenderPassColorAttachment {
-                            view: &frame.view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
-                                store: true,
-                            },
-                        }],
-                        depth_stencil_attachment: None,
-                    });
-                    rpass.set_pipeline(&render_pipeline);
-                    // rpass.set_vertex_buffer(0, vertex_buf.slice(..));
-                    rpass.draw(0..3, 0..1);
-                }
-
-                queue.submit(Some(encoder.finish()));
-            }
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => *control_flow = ControlFlow::Exit,
-            _ => {}
-        }
-    });
-    */
 }
 
 fn main() {
-    // let event_loop = EventLoop::new();
-    // let window = winit::window::Window::new(&event_loop).unwrap();
     env_logger::init();
-    // Temporarily avoid srgb formats for the swapchain on the web
-    pollster::block_on(run());
+    pollster::block_on(run(600, 400, "out.png"));
 }
 
 struct BufferDimensions {

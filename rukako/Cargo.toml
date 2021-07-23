@@ -8,10 +8,8 @@ edition = "2018"
 [dependencies]
 wgpu = "0.8.1"
 bytemuck = { version = "1.4", features = ["derive"] }
-winit = { version = "0.24", features = ["web-sys"] }
 env_logger = "0.8"
 pollster = "0.2"
-cgmath = "0.18.0"
 image = "0.23"
 anyhow = "1.0"
 png = "0.16.8"
