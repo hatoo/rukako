@@ -311,6 +311,7 @@ impl Material for EnumMaterialPod {
 */
 
 impl EnumMaterial {
+    #[inline(always)]
     pub fn albedo(&self) -> Vec3 {
         self.data.xyz()
     }

@@ -6,9 +6,9 @@ use crate::{material::Lambertian, ray::Ray};
 pub struct HitRecord {
     pub position: Vec3,
     pub normal: Vec3,
+    pub material: crate::pod::EnumMaterial,
     pub t: f32,
     pub front_face: u32,
-    pub material: crate::pod::EnumMaterial,
 }
 
 impl HitRecord {
