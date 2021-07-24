@@ -5,24 +5,26 @@ use spirv_std::num_traits::Float;
 use crate::hittable::{HitRecord, Hittable};
 
 #[derive(Clone, Copy, Zeroable, Pod)]
-#[repr(transparent)]
+#[repr(C)]
 pub struct Sphere {
-    pub data: [f32; 4],
+    pub center: [f32; 3],
+    pub radius: f32,
 }
 
 impl Sphere {
     pub fn new(center: Vec3, radius: f32) -> Self {
         Self {
-            data: [center.x, center.y, center.z, radius],
+            center: [center.x, center.y, center.z],
+            radius,
         }
     }
 
     pub fn center(&self) -> Vec3 {
-        vec3(self.data[0], self.data[1], self.data[2])
+        vec3(self.center[0], self.center[1], self.center[2])
     }
 
     pub fn radius(&self) -> f32 {
-        self.data[3]
+        self.radius
     }
 }
 
