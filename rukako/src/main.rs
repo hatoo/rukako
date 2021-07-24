@@ -4,7 +4,7 @@ use image::{png::PngEncoder, ImageEncoder};
 use rand::prelude::StdRng;
 use rand::prelude::*;
 use rukako_shader::{
-    pod::{EnumMaterial, Lambertian, Sphere},
+    pod::{EnumMaterialPod, Lambertian, Sphere},
     ShaderConstants,
 };
 use spirv_std::glam::{vec3, Vec3};
@@ -17,12 +17,10 @@ fn random_scene() -> Vec<Sphere> {
 
     let mut world = Vec::new();
 
-    let m = EnumMaterial::new_dielectric(1.5);
-
     world.push(Sphere::new(
         vec3(0.0, -1000.0, 0.0),
         1000.0,
-        EnumMaterial::new_lambertian(vec3(0.5, 0.5, 0.5)),
+        EnumMaterialPod::new_lambertian(vec3(0.5, 0.5, 0.5)),
     ));
 
     for a in -11..11 {
@@ -44,7 +42,7 @@ fn random_scene() -> Vec<Sphere> {
                         world.push(Sphere::new(
                             center,
                             0.3,
-                            EnumMaterial::new_lambertian(albedo),
+                            EnumMaterialPod::new_lambertian(albedo),
                         ));
                     }
                     x if x < 0.95 => {
@@ -58,10 +56,14 @@ fn random_scene() -> Vec<Sphere> {
                         world.push(Sphere::new(
                             center,
                             0.2,
-                            EnumMaterial::new_metal(albedo, fuzz),
+                            EnumMaterialPod::new_metal(albedo, fuzz),
                         ));
                     }
-                    _ => world.push(Sphere::new(center, 0.2, EnumMaterial::new_dielectric(1.5))),
+                    _ => world.push(Sphere::new(
+                        center,
+                        0.2,
+                        EnumMaterialPod::new_dielectric(1.5),
+                    )),
                 }
             }
         }
@@ -70,17 +72,17 @@ fn random_scene() -> Vec<Sphere> {
     world.push(Sphere::new(
         vec3(0.0, 1.0, 0.0),
         1.0,
-        EnumMaterial::new_dielectric(1.5),
+        EnumMaterialPod::new_dielectric(1.5),
     ));
     world.push(Sphere::new(
         vec3(-4.0, 1.0, 0.0),
         1.0,
-        EnumMaterial::new_lambertian(vec3(0.4, 0.2, 0.1)),
+        EnumMaterialPod::new_lambertian(vec3(0.4, 0.2, 0.1)),
     ));
     world.push(Sphere::new(
         vec3(4.0, 1.0, 0.0),
         1.0,
-        EnumMaterial::new_metal(vec3(0.7, 0.6, 0.5), 0.0),
+        EnumMaterialPod::new_metal(vec3(0.7, 0.6, 0.5), 0.0),
     ));
 
     world
@@ -283,5 +285,5 @@ async fn run(
 
 fn main() {
     env_logger::init();
-    pollster::block_on(run(1200, 800, 100, "out.png"));
+    pollster::block_on(run(1200, 800, 500, "out.png"));
 }

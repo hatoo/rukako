@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use spirv_std::glam::{vec3, Vec3};
+use spirv_std::glam::{vec3, Vec3, Vec4, Vec4Swizzles};
 use spirv_std::num_traits::Float;
 
 use crate::hittable::{HitRecord, Hittable};
@@ -12,8 +12,10 @@ use crate::ray::Ray;
 #[repr(C)]
 pub struct Sphere {
     pub center: [f32; 3],
+    pub _pad0: f32,
     pub radius: f32,
-    pub material: EnumMaterial,
+    pub _pad1: [f32; 3],
+    pub material: EnumMaterialPod,
 }
 
 #[derive(Clone, Copy, Default, Zeroable, Pod)]
@@ -22,18 +24,28 @@ pub struct Lambertian {
     pub albedo: [f32; 4],
 }
 
-#[derive(Clone, Copy, Default, Zeroable, Pod)]
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct EnumMaterial {
-    pub data: [f32; 4],
+    pub data: Vec4,
     pub t: u32,
 }
 
+#[derive(Clone, Copy, Default, Zeroable, Pod)]
+#[repr(C)]
+pub struct EnumMaterialPod {
+    pub data: [f32; 4],
+    pub t: u32,
+    pub _pad: [f32; 3],
+}
+
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32, material: EnumMaterial) -> Self {
+    pub fn new(center: Vec3, radius: f32, material: EnumMaterialPod) -> Self {
         Self {
             center: [center.x, center.y, center.z],
+            _pad0: 0.0,
             radius,
+            _pad1: [0.0, 0.0, 0.0],
             material,
         }
     }
@@ -47,6 +59,7 @@ impl Sphere {
     }
 }
 
+/*
 impl Hittable for Sphere {
     fn hit(
         &self,
@@ -96,6 +109,7 @@ impl Hittable for Sphere {
         1
     }
 }
+*/
 
 impl Lambertian {
     pub fn new(albedo: Vec3) -> Lambertian {
@@ -156,11 +170,12 @@ fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
 }
 
-impl EnumMaterial {
+impl EnumMaterialPod {
     pub fn new_lambertian(albedo: Vec3) -> Self {
         Self {
             data: [albedo.x, albedo.y, albedo.z, 0.0],
             t: 0,
+            _pad: [0.0, 0.0, 0.0],
         }
     }
 
@@ -168,6 +183,7 @@ impl EnumMaterial {
         Self {
             data: [albedo.x, albedo.y, albedo.z, fuzz],
             t: 1,
+            _pad: [0.0, 0.0, 0.0],
         }
     }
 
@@ -175,6 +191,7 @@ impl EnumMaterial {
         Self {
             data: [ir, 0.0, 0.0, 0.0],
             t: 2,
+            _pad: [0.0, 0.0, 0.0],
         }
     }
 
@@ -274,7 +291,8 @@ impl EnumMaterial {
     }
 }
 
-impl Material for EnumMaterial {
+/*
+impl Material for EnumMaterialPod {
     fn scatter(
         &self,
         ray: &Ray,
@@ -285,6 +303,120 @@ impl Material for EnumMaterial {
         match self.t {
             0 => unsafe { core::mem::transmute::<_, Lambertian>(self.data) }
                 .scatter(ray, hit_record, rng, scatter),
+            1 => self.metal_scatter(ray, hit_record, rng, scatter),
+            _ => self.dielectric_scatter(ray, hit_record, rng, scatter),
+        }
+    }
+}
+*/
+
+impl EnumMaterial {
+    pub fn albedo(&self) -> Vec3 {
+        self.data.xyz()
+    }
+
+    fn lambertian_scatter(
+        &self,
+        ray: &Ray,
+        hit_record: &HitRecord,
+        rng: &mut DefaultRng,
+        scatter: &mut Scatter,
+    ) -> u32 {
+        let scatter_direction = hit_record.normal + random_in_unit_sphere(rng).normalize();
+
+        let scatter_direction = if scatter_direction.is_near_zero() != 0 {
+            hit_record.normal
+        } else {
+            scatter_direction
+        };
+
+        let scatterd = Ray {
+            origin: hit_record.position,
+            direction: scatter_direction,
+            time: ray.time,
+        };
+
+        *scatter = Scatter {
+            color: self.albedo(),
+            ray: scatterd,
+        };
+        1
+    }
+
+    fn metal_scatter(
+        &self,
+        ray: &Ray,
+        hit_record: &HitRecord,
+        rng: &mut DefaultRng,
+        scatter: &mut Scatter,
+    ) -> u32 {
+        let fuzz = self.data.w;
+        let reflected = reflect(ray.direction.normalize(), hit_record.normal);
+        let scatterd = reflected + fuzz * random_in_unit_sphere(rng);
+        if scatterd.dot(hit_record.normal) > 0.0 {
+            *scatter = Scatter {
+                color: self.albedo(),
+                ray: Ray {
+                    origin: hit_record.position,
+                    direction: scatterd,
+                    time: ray.time,
+                },
+            };
+            1
+        } else {
+            0
+        }
+    }
+
+    fn dielectric_scatter(
+        &self,
+        ray: &Ray,
+        hit_record: &HitRecord,
+        rng: &mut DefaultRng,
+        scatter: &mut Scatter,
+    ) -> u32 {
+        let ir = self.data.x;
+        let refraction_ratio = if hit_record.front_face != 0 {
+            1.0 / ir
+        } else {
+            ir
+        };
+
+        let unit_direction = ray.direction.normalize();
+        let cos_theta = (-unit_direction).dot(hit_record.normal).min(1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+        let cannot_refract = refraction_ratio * sin_theta > 1.0;
+
+        let direction = if cannot_refract {
+            reflect(unit_direction, hit_record.normal)
+        } else if reflectance(cos_theta, refraction_ratio) > rng.next_f32() {
+            reflect(unit_direction, hit_record.normal)
+        } else {
+            refract(unit_direction, hit_record.normal, refraction_ratio)
+        };
+
+        *scatter = Scatter {
+            color: vec3(1.0, 1.0, 1.0),
+            ray: Ray {
+                origin: hit_record.position,
+                direction,
+                time: ray.time,
+            },
+        };
+        1
+    }
+}
+
+impl Material for EnumMaterial {
+    fn scatter(
+        &self,
+        ray: &Ray,
+        hit_record: &HitRecord,
+        rng: &mut DefaultRng,
+        scatter: &mut Scatter,
+    ) -> u32 {
+        match self.t {
+            0 => self.lambertian_scatter(ray, hit_record, rng, scatter),
             1 => self.metal_scatter(ray, hit_record, rng, scatter),
             _ => self.dielectric_scatter(ray, hit_record, rng, scatter),
         }

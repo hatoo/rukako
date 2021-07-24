@@ -1,17 +1,19 @@
 use spirv_std::glam::Vec3;
 use spirv_std::num_traits::Float;
 
-use crate::hittable::{HitRecord, Hittable};
+use crate::{
+    hittable::{HitRecord, Hittable},
+    pod::EnumMaterial,
+};
 
 #[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
-    // pub material: Arc<Box<dyn Material>>,
+    pub matelial: EnumMaterial,
 }
 
-/*
 impl Hittable for Sphere {
     fn hit(
         &self,
@@ -56,9 +58,8 @@ impl Hittable for Sphere {
             (position - self.center) / self.radius,
             root,
             ray,
-            // self.material.clone(),
+            self.matelial,
         );
         1
     }
 }
-*/
