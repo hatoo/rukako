@@ -70,7 +70,7 @@ fn ray_color(
     let mut color = vec3(1.0, 1.0, 1.0);
     let mut ray = *ray;
 
-    for _ in 0..8 {
+    for _ in 0..50 {
         let mut hit_record = HitRecord::default();
         /*if world.hit(&ray, 0.001, f32::INFINITY, &mut hit_record)*/
         if hit(

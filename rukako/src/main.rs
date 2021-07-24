@@ -166,20 +166,27 @@ async fn run(
         seed: rng.gen(),
     };
 
-    let mut encoder =
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-    {
-        let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-        cpass.set_pipeline(&compute_pipeline);
-        cpass.set_bind_group(0, &bind_group, &[]);
+    for i in 0..n_samples {
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        {
+            let mut cpass =
+                encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            cpass.set_pipeline(&compute_pipeline);
+            cpass.set_bind_group(0, &bind_group, &[]);
 
-        for _ in 0..n_samples {
             push_constants.seed = rng.gen();
             cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
             cpass.dispatch((width as u32 + 31) / 32, (height as u32 + 31) / 32, 1);
         }
+        queue.submit(Some(encoder.finish()));
+        device.poll(wgpu::Maintain::Wait);
+        eprint!("\rSaamples: {} / {} ", i + 1, n_samples);
     }
+    eprint!("\nDone");
 
+    let mut encoder =
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
     encoder.copy_buffer_to_buffer(
         &storage_buffer,
         0,
@@ -225,5 +232,5 @@ async fn run(
 
 fn main() {
     env_logger::init();
-    pollster::block_on(run(1200, 675, 100, "out.png"));
+    pollster::block_on(run(1200, 800, 500, "out.png"));
 }
