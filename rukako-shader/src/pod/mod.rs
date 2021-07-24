@@ -11,6 +11,12 @@ pub struct Sphere {
 }
 
 impl Sphere {
+    pub fn new(center: Vec3, radius: f32) -> Self {
+        Self {
+            data: [center.x, center.y, center.z, radius],
+        }
+    }
+
     pub fn center(&self) -> Vec3 {
         vec3(self.data[0], self.data[1], self.data[2])
     }

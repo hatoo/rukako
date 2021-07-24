@@ -50,8 +50,7 @@ fn hit(
     let mut hit = 0;
 
     for i in 0..len {
-        let hittable = world[i];
-        if hittable.hit(ray, t_min, closest_so_far, hit_record) != 0 {
+        if world[i].hit(ray, t_min, closest_so_far, hit_record) != 0 {
             closest_so_far = hit_record.t;
             hit = 1;
         }
@@ -70,7 +69,7 @@ fn ray_color(
     let mut color = vec3(1.0, 1.0, 1.0);
     let mut ray = *ray;
 
-    for _ in 0..50 {
+    for _ in 0..8 {
         let mut hit_record = HitRecord::default();
         /*if world.hit(&ray, 0.001, f32::INFINITY, &mut hit_record)*/
         if hit(
@@ -151,7 +150,7 @@ fn ray_color_test(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
     }
 }
 
-#[spirv(compute(threads(1024, 1, 1)))]
+#[spirv(compute(threads(512, 1, 1)))]
 pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
     #[spirv(local_invocation_id)] local_id: UVec3,
@@ -201,13 +200,14 @@ pub fn main_cs(
         &mut rng,
     ); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
 
-    let scale = 1.0 / 1024.0;
+    let scale = 1.0 / 512.0;
 
     unsafe {
         control_barrier::<0, 0, { Semantics::NONE.bits() }>();
-        for i in 0..1024 {
+        for i in 0..512 {
             if i == local_id.x {
-                out[(y * constants.width + x) as usize] += color.extend(1.0) * scale;
+                out[((constants.height - y - 1) * constants.width + x) as usize] +=
+                    color.extend(1.0) * scale;
             }
             control_barrier::<0, 0, { Semantics::NONE.bits() }>();
         }

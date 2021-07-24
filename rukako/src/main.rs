@@ -1,10 +1,39 @@
 use std::{borrow::Cow, fs::File, num::NonZeroU64, path::Path};
 
 use image::{png::PngEncoder, ImageEncoder};
-use rukako_shader::ShaderConstants;
+use rukako_shader::{pod::Sphere, ShaderConstants};
+use spirv_std::glam::vec3;
 use wgpu::util::DeviceExt;
 
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));
+
+fn random_scene() -> Vec<Sphere> {
+    use rand::prelude::*;
+
+    let mut rng = StdRng::from_entropy();
+
+    let mut world = Vec::new();
+
+    world.push(Sphere::new(vec3(0.0, -1000.0, 0.0), 1000.0));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let center = vec3(
+                a as f32 + 0.9 * rng.gen::<f32>(),
+                0.2,
+                b as f32 + 0.9 * rng.gen::<f32>(),
+            );
+
+            world.push(Sphere::new(center, 0.2));
+        }
+    }
+
+    world.push(Sphere::new(vec3(0.0, 1.0, 0.0), 1.0));
+    world.push(Sphere::new(vec3(-4.0, 1.0, 0.0), 1.0));
+    world.push(Sphere::new(vec3(4.0, 1.0, 0.0), 1.0));
+
+    world
+}
 
 async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>) {
     let instance = wgpu::Instance::new(wgpu::BackendBit::all());
@@ -36,13 +65,25 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         flags: wgpu::ShaderFlags::default(),
     });
 
+    let world = random_scene();
+
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: None,
         entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                count: None,
+                visibility: wgpu::ShaderStage::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    has_dynamic_offset: false,
+                    min_binding_size: Some(NonZeroU64::new(1).unwrap()),
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                },
+            },
             // XXX - some graphics cards do not support empty bind layout groups, so
             // create a dummy entry.
             wgpu::BindGroupLayoutEntry {
-                binding: 0,
+                binding: 1,
                 count: None,
                 visibility: wgpu::ShaderStage::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
@@ -88,19 +129,33 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
             | wgpu::BufferUsage::COPY_SRC,
     });
 
+    let world_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("world"),
+        contents: bytemuck::cast_slice(world.as_slice()),
+        usage: wgpu::BufferUsage::STORAGE
+            // | wgpu::BufferUsage::COPY_DST
+            // | wgpu::BufferUsage::COPY_SRC,
+    });
+
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: None,
         layout: &bind_group_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: storage_buffer.as_entire_binding(),
-        }],
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: world_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: storage_buffer.as_entire_binding(),
+            },
+        ],
     });
 
     let push_constants = ShaderConstants {
         width: width as u32,
         height: height as u32,
-        world_len: 0,
+        world_len: world.len() as u32,
     };
 
     let mut encoder =
