@@ -155,5 +155,5 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
 
 fn main() {
     env_logger::init();
-    pollster::block_on(run(256, 256, "out.png"));
+    pollster::block_on(run(600, 400, "out.png"));
 }

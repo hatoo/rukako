@@ -13,7 +13,7 @@ use spirv_std::macros::spirv;
 use spirv_std::num_traits::FloatConst;
 use spirv_std::{
     arch::control_barrier,
-    glam::{vec3, vec4, UVec3, Vec3, Vec4},
+    glam::{vec3, UVec3, Vec3, Vec4},
     memory::Semantics,
 };
 
@@ -29,45 +29,7 @@ pub mod ray;
 pub struct ShaderConstants {
     pub width: u32,
     pub height: u32,
-    /*
-    pub camera_origin: [f32; 3],
-    pub camera_lower_left_corner: [f32; 3],
-    pub camera_horizontal: [f32; 3],
-    pub camera_vertical: [f32; 3],
-    pub camera_u: [f32; 3],
-    pub camera_v: [f32; 3],
-    pub camera_w: [f32; 3],
-    pub camera_lens_radius: f32,
-    pub time0: f32,
-    pub time1: f32,
-    */
 }
-
-/*
-#[spirv(fragment)]
-pub fn main_fs(
-    #[spirv(frag_coord)] in_frag_coord: Vec4,
-    #[spirv(push_constant)] constants: &ShaderConstants,
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] slice: &[f32],
-    output: &mut Vec4,
-) {
-    let r = in_frag_coord.x as f32 / (constants.width - 1) as f32;
-    let g = in_frag_coord.y as f32 / (constants.height - 1) as f32;
-    *output = in_frag_coord;
-    output.x = r;
-    output.y = slice[0];
-}
-
-#[spirv(vertex)]
-pub fn main_vs(#[spirv(vertex_index)] vert_idx: i32, #[spirv(position)] builtin_pos: &mut Vec4) {
-    // Create a "full screen triangle" by mapping the vertex index.
-    // ported from https://www.saschawillems.de/blog/2016/08/13/vulkan-tutorial-on-rendering-a-fullscreen-quad-without-buffers/
-    let uv = vec2(((vert_idx << 1) & 2) as f32, (vert_idx & 2) as f32);
-    let pos = 2.0 * uv - Vec2::ONE;
-
-    *builtin_pos = pos.extend(0.0).extend(1.0);
-}
-*/
 
 fn ray_color(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
     let oc = ray.origin - center;
@@ -84,7 +46,6 @@ fn ray_color(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
     }
 }
 
-// LocalSize/numthreads of (x = 64, y = 1, z = 1)
 #[spirv(compute(threads(1024, 1, 1)))]
 pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
