@@ -1,6 +1,6 @@
 use spirv_std::glam::Vec3;
 
-use crate::ray::Ray;
+use crate::{material::Lambertian, ray::Ray};
 
 #[derive(Clone, Default)]
 pub struct HitRecord {
@@ -8,7 +8,7 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub t: f32,
     pub front_face: u32,
-    // pub material: Arc<Box<dyn Material>>,
+    pub material: crate::pod::EnumMaterial,
 }
 
 impl HitRecord {
@@ -17,7 +17,7 @@ impl HitRecord {
         outward_normal: Vec3,
         t: f32,
         ray: &Ray,
-        // material: Arc<Box<dyn Material>>,
+        material: crate::pod::EnumMaterial,
     ) -> Self {
         let front_face = ray.direction.dot(outward_normal) < 0.0;
         let normal = if front_face {
@@ -31,7 +31,7 @@ impl HitRecord {
             normal,
             t,
             front_face: front_face as u32,
-            // material,
+            material,
         }
     }
 }

@@ -11,6 +11,7 @@ pub struct Sphere {
     // pub material: Arc<Box<dyn Material>>,
 }
 
+/*
 impl Hittable for Sphere {
     fn hit(
         &self,
@@ -60,3 +61,4 @@ impl Hittable for Sphere {
         1
     }
 }
+*/

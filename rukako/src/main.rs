@@ -3,8 +3,11 @@ use std::{borrow::Cow, fs::File, num::NonZeroU64, path::Path};
 use image::{png::PngEncoder, ImageEncoder};
 use rand::prelude::StdRng;
 use rand::prelude::*;
-use rukako_shader::{pod::Sphere, ShaderConstants};
-use spirv_std::glam::vec3;
+use rukako_shader::{
+    pod::{EnumMaterial, Lambertian, Sphere},
+    ShaderConstants,
+};
+use spirv_std::glam::{vec3, Vec3};
 use wgpu::util::DeviceExt;
 
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));
@@ -14,7 +17,13 @@ fn random_scene() -> Vec<Sphere> {
 
     let mut world = Vec::new();
 
-    world.push(Sphere::new(vec3(0.0, -1000.0, 0.0), 1000.0));
+    let m = EnumMaterial::new_dielectric(1.5);
+
+    world.push(Sphere::new(
+        vec3(0.0, -1000.0, 0.0),
+        1000.0,
+        EnumMaterial::new_lambertian(vec3(0.5, 0.5, 0.5)),
+    ));
 
     for a in -11..11 {
         for b in -11..11 {
@@ -24,13 +33,55 @@ fn random_scene() -> Vec<Sphere> {
                 b as f32 + 0.9 * rng.gen::<f32>(),
             );
 
-            world.push(Sphere::new(center, 0.2));
+            let choose_mat: f32 = rng.gen();
+
+            if (center - vec3(4.0, 0.2, 0.0)).length() > 0.9 {
+                match choose_mat {
+                    x if x < 0.8 => {
+                        let albedo = vec3(rng.gen(), rng.gen(), rng.gen())
+                            * vec3(rng.gen(), rng.gen(), rng.gen());
+
+                        world.push(Sphere::new(
+                            center,
+                            0.3,
+                            EnumMaterial::new_lambertian(albedo),
+                        ));
+                    }
+                    x if x < 0.95 => {
+                        let albedo = vec3(
+                            rng.gen_range(0.5..1.0),
+                            rng.gen_range(0.5..1.0),
+                            rng.gen_range(0.5..1.0),
+                        );
+                        let fuzz = rng.gen_range(0.5..1.0);
+
+                        world.push(Sphere::new(
+                            center,
+                            0.2,
+                            EnumMaterial::new_metal(albedo, fuzz),
+                        ));
+                    }
+                    _ => world.push(Sphere::new(center, 0.2, EnumMaterial::new_dielectric(1.5))),
+                }
+            }
         }
     }
 
-    world.push(Sphere::new(vec3(0.0, 1.0, 0.0), 1.0));
-    world.push(Sphere::new(vec3(-4.0, 1.0, 0.0), 1.0));
-    world.push(Sphere::new(vec3(4.0, 1.0, 0.0), 1.0));
+    world.push(Sphere::new(
+        vec3(0.0, 1.0, 0.0),
+        1.0,
+        EnumMaterial::new_dielectric(1.5),
+    ));
+    world.push(Sphere::new(
+        vec3(-4.0, 1.0, 0.0),
+        1.0,
+        EnumMaterial::new_lambertian(vec3(0.4, 0.2, 0.1)),
+    ));
+    world.push(Sphere::new(
+        vec3(4.0, 1.0, 0.0),
+        1.0,
+        EnumMaterial::new_metal(vec3(0.7, 0.6, 0.5), 0.0),
+    ));
 
     world
 }
@@ -214,7 +265,7 @@ async fn run(
 
         let rgba: Vec<u8> = v4
             .iter()
-            .map(|f| (256.0 * (f * scale).clamp(0.0, 0.999)) as u8)
+            .map(|f| (256.0 * (f * scale).sqrt().clamp(0.0, 0.999)) as u8)
             .collect();
         png_encoder
             .write_image(

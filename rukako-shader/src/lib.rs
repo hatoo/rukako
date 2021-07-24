@@ -60,13 +60,7 @@ fn hit(
     hit
 }
 
-fn ray_color(
-    ray: &Ray,
-    world: &[pod::Sphere],
-    world_len: usize,
-    material: &Lambertian,
-    rng: &mut DefaultRng,
-) -> Vec3 {
+fn ray_color(ray: &Ray, world: &[pod::Sphere], world_len: usize, rng: &mut DefaultRng) -> Vec3 {
     let mut color = vec3(1.0, 1.0, 1.0);
     let mut ray = *ray;
 
@@ -83,6 +77,8 @@ fn ray_color(
         ) != 0
         {
             let mut scatter = Scatter::default();
+
+            let material = hit_record.material;
 
             if material.scatter(&ray, &hit_record, rng, &mut scatter) != 0 {
                 color *= scatter.color;
@@ -170,10 +166,6 @@ pub fn main_cs(
         return;
     }
 
-    let material = Lambertian {
-        albedo: vec3(0.4, 0.2, 0.1),
-    };
-
     let seed = constants.seed ^ (constants.width * y + x);
     let mut rng = DefaultRng::new(seed);
 
@@ -183,7 +175,7 @@ pub fn main_cs(
         vec3(0.0, 1.0, 0.0),
         20.0 / 180.0 * f32::PI(),
         constants.width as f32 / constants.height as f32,
-        0.0,
+        0.1,
         10.0,
         0.0,
         1.0,
@@ -193,13 +185,7 @@ pub fn main_cs(
     let v = (y as f32 + rng.next_f32()) / (constants.height - 1) as f32;
 
     let ray = camera.get_ray(u, v, &mut rng);
-    let color = ray_color(
-        &ray,
-        world,
-        constants.world_len as usize,
-        &material,
-        &mut rng,
-    ); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
+    let color = ray_color(&ray, world, constants.world_len as usize, &mut rng); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
 
     //let scale = 1.0 / 512.0;
     out[((constants.height - y - 1) * constants.width + x) as usize] += color.extend(1.0);
