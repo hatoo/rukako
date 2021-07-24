@@ -283,5 +283,5 @@ async fn run(
 
 fn main() {
     env_logger::init();
-    pollster::block_on(run(1200, 800, 500, "out.png"));
+    pollster::block_on(run(1200, 800, 100, "out.png"));
 }

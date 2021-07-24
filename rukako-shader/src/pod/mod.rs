@@ -17,9 +17,9 @@ pub struct Sphere {
 }
 
 #[derive(Clone, Copy, Default, Zeroable, Pod)]
-#[repr(C)]
+#[repr(transparent)]
 pub struct Lambertian {
-    pub albedo: [f32; 3],
+    pub albedo: [f32; 4],
 }
 
 #[derive(Clone, Copy, Default, Zeroable, Pod)]
@@ -100,7 +100,7 @@ impl Hittable for Sphere {
 impl Lambertian {
     pub fn new(albedo: Vec3) -> Lambertian {
         Self {
-            albedo: [albedo.x, albedo.y, albedo.z],
+            albedo: [albedo.x, albedo.y, albedo.z, 0.0],
         }
     }
 
@@ -283,7 +283,8 @@ impl Material for EnumMaterial {
         scatter: &mut Scatter,
     ) -> u32 {
         match self.t {
-            0 => self.lambertian_scatter(ray, hit_record, rng, scatter),
+            0 => unsafe { core::mem::transmute::<_, Lambertian>(self.data) }
+                .scatter(ray, hit_record, rng, scatter),
             1 => self.metal_scatter(ray, hit_record, rng, scatter),
             _ => self.dielectric_scatter(ray, hit_record, rng, scatter),
         }
