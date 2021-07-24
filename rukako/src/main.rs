@@ -1,6 +1,8 @@
 use std::{borrow::Cow, fs::File, num::NonZeroU64, path::Path};
 
 use image::{png::PngEncoder, ImageEncoder};
+use rand::prelude::StdRng;
+use rand::prelude::*;
 use rukako_shader::{pod::Sphere, ShaderConstants};
 use spirv_std::glam::vec3;
 use wgpu::util::DeviceExt;
@@ -8,8 +10,6 @@ use wgpu::util::DeviceExt;
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));
 
 fn random_scene() -> Vec<Sphere> {
-    use rand::prelude::*;
-
     let mut rng = StdRng::from_entropy();
 
     let mut world = Vec::new();
@@ -35,7 +35,12 @@ fn random_scene() -> Vec<Sphere> {
     world
 }
 
-async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>) {
+async fn run(
+    width: usize,
+    height: usize,
+    n_samples: usize,
+    output_png_file_name: impl AsRef<Path>,
+) {
     let instance = wgpu::Instance::new(wgpu::BackendBit::all());
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions::default())
@@ -152,10 +157,13 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         ],
     });
 
-    let push_constants = ShaderConstants {
+    let mut rng = StdRng::from_entropy();
+
+    let mut push_constants = ShaderConstants {
         width: width as u32,
         height: height as u32,
         world_len: world.len() as u32,
+        seed: rng.gen(),
     };
 
     let mut encoder =
@@ -164,8 +172,12 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
         cpass.set_pipeline(&compute_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
-        cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
-        cpass.dispatch(1, width as u32, height as u32);
+
+        for _ in 0..n_samples {
+            push_constants.seed = rng.gen();
+            cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
+            cpass.dispatch((width as u32 + 31) / 32, (width as u32 + 31) / 32, 1);
+        }
     }
 
     encoder.copy_buffer_to_buffer(
@@ -191,9 +203,11 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         let v4: &[f32] = bytemuck::cast_slice(&padded_buffer[..]);
         dbg!(v4[0]);
 
+        let scale = 1.0 / n_samples as f32;
+
         let rgba: Vec<u8> = v4
             .iter()
-            .map(|f| (256.0 * f.clamp(0.0, 0.999)) as u8)
+            .map(|f| (256.0 * (f * scale).clamp(0.0, 0.999)) as u8)
             .collect();
         png_encoder
             .write_image(
@@ -211,5 +225,5 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
 
 fn main() {
     env_logger::init();
-    pollster::block_on(run(640, 480, "out.png"));
+    pollster::block_on(run(1200, 675, 1000, "out.png"));
 }

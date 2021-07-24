@@ -36,6 +36,7 @@ pub struct ShaderConstants {
     pub width: u32,
     pub height: u32,
     pub world_len: u32,
+    pub seed: u32,
 }
 
 fn hit(
@@ -150,7 +151,7 @@ fn ray_color_test(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
     }
 }
 
-#[spirv(compute(threads(512, 1, 1)))]
+#[spirv(compute(threads(32, 32, 1)))]
 pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
     #[spirv(local_invocation_id)] local_id: UVec3,
@@ -158,8 +159,8 @@ pub fn main_cs(
     #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] world: &[pod::Sphere],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] out: &mut [Vec4],
 ) {
-    let x = id.y;
-    let y = id.z;
+    let x = id.x;
+    let y = id.y;
 
     if x >= constants.width {
         return;
@@ -173,7 +174,7 @@ pub fn main_cs(
         albedo: vec3(0.4, 0.2, 0.1),
     };
 
-    let seed = id.x * (constants.width * constants.height) + constants.width * y + x;
+    let seed = constants.seed ^ (constants.width * y + x);
     let mut rng = DefaultRng::new(seed);
 
     let camera = Camera::new(
@@ -200,8 +201,9 @@ pub fn main_cs(
         &mut rng,
     ); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
 
-    let scale = 1.0 / 512.0;
-
+    //let scale = 1.0 / 512.0;
+    out[((constants.height - y - 1) * constants.width + x) as usize] += color.extend(1.0);
+    /*
     unsafe {
         control_barrier::<0, 0, { Semantics::NONE.bits() }>();
         for i in 0..512 {
@@ -212,4 +214,5 @@ pub fn main_cs(
             control_barrier::<0, 0, { Semantics::NONE.bits() }>();
         }
     }
+    */
 }
