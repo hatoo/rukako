@@ -218,7 +218,7 @@ impl EnumMaterial {
         scatter: &mut Scatter,
     ) -> u32 {
         let fuzz = self.data[3];
-        let reflected = reflect(ray.direction, hit_record.normal);
+        let reflected = reflect(ray.direction.normalize(), hit_record.normal);
         let scatterd = reflected + fuzz * random_in_unit_sphere(rng);
         if scatterd.dot(hit_record.normal) > 0.0 {
             *scatter = Scatter {
