@@ -3,6 +3,8 @@ use spirv_std::num_traits::Float;
 
 use crate::hittable::{HitRecord, Hittable};
 
+#[derive(Clone, Copy)]
+#[repr(C)]
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,

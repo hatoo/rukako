@@ -37,13 +37,30 @@ pub struct ShaderConstants {
     pub height: u32,
 }
 
-fn ray_color(ray: &Ray, world: &Sphere, material: &Lambertian, rng: &mut DefaultRng) -> Vec3 {
+fn hit(ray: &Ray, world: &[Sphere; 2], t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> u32 {
+    let mut closest_so_far = t_max;
+    let mut hit = 0;
+
+    for i in 0..2 {
+        let hittable = world[i];
+        if hittable.hit(ray, t_min, closest_so_far, hit_record) != 0 {
+            closest_so_far = hit_record.t;
+            hit = 1;
+        }
+    }
+
+    hit
+}
+
+fn ray_color(ray: &Ray, world: &[Sphere; 2], material: &Lambertian, rng: &mut DefaultRng) -> Vec3 {
     let mut color = vec3(1.0, 1.0, 1.0);
     let mut ray = *ray;
 
     for _ in 0..50 {
         let mut hit_record = HitRecord::default();
-        if world.hit(&ray, 0.001, f32::INFINITY, &mut hit_record) != 0 {
+        if
+        /*world.hit(&ray, 0.001, f32::INFINITY, &mut hit_record)*/
+        hit(&ray, world, 0.001, f32::INFINITY, &mut hit_record) != 0 {
             let mut scatter = Scatter::default();
 
             if material.scatter(&ray, &hit_record, rng, &mut scatter) != 0 {
@@ -131,10 +148,16 @@ pub fn main_cs(
         return;
     }
 
-    let world = Sphere {
-        center: vec3(0.0, 1.0, 0.0),
-        radius: 1.0,
-    };
+    let world = [
+        Sphere {
+            center: vec3(0.0, 1.0, 0.0),
+            radius: 1.0,
+        },
+        Sphere {
+            center: vec3(-4.0, 1.0, 0.0),
+            radius: 1.0,
+        },
+    ];
 
     let material = Lambertian {
         albedo: vec3(0.4, 0.2, 0.1),
