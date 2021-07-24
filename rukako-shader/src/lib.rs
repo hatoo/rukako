@@ -12,6 +12,7 @@ use rand::DefaultRng;
 use ray::Ray;
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
+use spirv_std::num_traits::Float;
 use spirv_std::num_traits::FloatConst;
 use spirv_std::{
     arch::control_barrier,
@@ -41,7 +42,7 @@ pub struct ShaderConstants {
 
 fn hit(
     ray: &Ray,
-    world: &[pod::Sphere],
+    world: &[sphere::Sphere],
     len: usize,
     t_min: f32,
     t_max: f32,
@@ -60,7 +61,7 @@ fn hit(
     hit
 }
 
-fn ray_color(ray: &Ray, world: &[pod::Sphere], world_len: usize, rng: &mut DefaultRng) -> Vec3 {
+fn ray_color(ray: &Ray, world: &[sphere::Sphere], world_len: usize, rng: &mut DefaultRng) -> Vec3 {
     let mut color = vec3(1.0, 1.0, 1.0);
     let mut ray = *ray;
 
@@ -152,7 +153,7 @@ pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
     #[spirv(local_invocation_id)] local_id: UVec3,
     #[spirv(push_constant)] constants: &ShaderConstants,
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] world: &[pod::Sphere],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] world: &[sphere::Sphere],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] out: &mut [Vec4],
 ) {
     let x = id.x;
@@ -186,6 +187,14 @@ pub fn main_cs(
 
     let ray = camera.get_ray(u, v, &mut rng);
     let color = ray_color(&ray, world, constants.world_len as usize, &mut rng); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
+
+    /*
+    let mut color = vec3(1.0, 1.0, 1.0);
+
+    if world[1].matelial.t == 1 {
+        color = vec3(1.0, 0.0, 0.0);
+    }
+    */
 
     //let scale = 1.0 / 512.0;
     out[((constants.height - y - 1) * constants.width + x) as usize] += color.extend(1.0);
