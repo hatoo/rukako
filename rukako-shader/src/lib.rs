@@ -148,7 +148,7 @@ fn ray_color_test(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
     }
 }
 
-#[spirv(compute(threads(32, 32, 1)))]
+#[spirv(compute(threads(8, 8, 1)))]
 pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
     #[spirv(local_invocation_id)] local_id: UVec3,

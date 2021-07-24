@@ -230,7 +230,7 @@ async fn run(
 
             push_constants.seed = rng.gen();
             cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
-            cpass.dispatch((width as u32 + 31) / 32, (height as u32 + 31) / 32, 1);
+            cpass.dispatch((width as u32 + 7) / 8, (height as u32 + 7) / 8, 1);
         }
         queue.submit(Some(encoder.finish()));
         device.poll(wgpu::Maintain::Wait);
