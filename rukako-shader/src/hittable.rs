@@ -40,6 +40,7 @@ pub trait Hittable {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> u32;
 }
 
+/*
 impl<T: Hittable> Hittable for [T] {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> u32 {
         let mut closest_so_far = t_max;
@@ -55,3 +56,5 @@ impl<T: Hittable> Hittable for [T] {
         hit
     }
 }
+
+*/

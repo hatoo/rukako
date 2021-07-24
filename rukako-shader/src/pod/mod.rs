@@ -1,14 +1,23 @@
-use spirv_std::glam::Vec3;
+use bytemuck::{Pod, Zeroable};
+use spirv_std::glam::{vec3, Vec3};
 use spirv_std::num_traits::Float;
 
 use crate::hittable::{HitRecord, Hittable};
 
-#[derive(Clone, Copy, Default)]
-#[repr(C)]
+#[derive(Clone, Copy, Zeroable, Pod)]
+#[repr(transparent)]
 pub struct Sphere {
-    pub center: Vec3,
-    pub radius: f32,
-    // pub material: Arc<Box<dyn Material>>,
+    pub data: [f32; 4],
+}
+
+impl Sphere {
+    pub fn center(&self) -> Vec3 {
+        vec3(self.data[0], self.data[1], self.data[2])
+    }
+
+    pub fn radius(&self) -> f32 {
+        self.data[3]
+    }
 }
 
 impl Hittable for Sphere {
@@ -19,10 +28,10 @@ impl Hittable for Sphere {
         t_max: f32,
         hit_record: &mut HitRecord,
     ) -> u32 {
-        let oc = ray.origin - self.center;
+        let oc = ray.origin - self.center();
         let a = ray.direction.length_squared();
         let half_b = oc.dot(ray.direction);
-        let c = oc.length_squared() - self.radius * self.radius;
+        let c = oc.length_squared() - self.radius() * self.radius();
 
         let discriminant = half_b * half_b - a * c;
         if discriminant < 0.0 {
@@ -52,7 +61,7 @@ impl Hittable for Sphere {
 
         *hit_record = HitRecord::new(
             position,
-            (position - self.center) / self.radius,
+            (position - self.center()) / self.radius(),
             root,
             ray,
             // self.material.clone(),

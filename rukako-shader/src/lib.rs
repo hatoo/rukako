@@ -10,7 +10,6 @@ use hittable::{HitRecord, Hittable};
 use material::{Lambertian, Material, Scatter};
 use rand::DefaultRng;
 use ray::Ray;
-use sphere::Sphere;
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 use spirv_std::num_traits::FloatConst;
@@ -26,6 +25,7 @@ pub mod camera;
 pub mod hittable;
 pub mod material;
 pub mod math;
+pub mod pod;
 pub mod rand;
 pub mod ray;
 pub mod sphere;
@@ -35,13 +35,21 @@ pub mod sphere;
 pub struct ShaderConstants {
     pub width: u32,
     pub height: u32,
+    pub world_len: u32,
 }
 
-fn hit(ray: &Ray, world: &[Sphere; 2], t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> u32 {
+fn hit(
+    ray: &Ray,
+    world: &[pod::Sphere],
+    len: usize,
+    t_min: f32,
+    t_max: f32,
+    hit_record: &mut HitRecord,
+) -> u32 {
     let mut closest_so_far = t_max;
     let mut hit = 0;
 
-    for i in 0..2 {
+    for i in 0..len {
         let hittable = world[i];
         if hittable.hit(ray, t_min, closest_so_far, hit_record) != 0 {
             closest_so_far = hit_record.t;
@@ -52,15 +60,28 @@ fn hit(ray: &Ray, world: &[Sphere; 2], t_min: f32, t_max: f32, hit_record: &mut 
     hit
 }
 
-fn ray_color(ray: &Ray, world: &[Sphere; 2], material: &Lambertian, rng: &mut DefaultRng) -> Vec3 {
+fn ray_color(
+    ray: &Ray,
+    world: &[pod::Sphere],
+    world_len: usize,
+    material: &Lambertian,
+    rng: &mut DefaultRng,
+) -> Vec3 {
     let mut color = vec3(1.0, 1.0, 1.0);
     let mut ray = *ray;
 
     for _ in 0..50 {
         let mut hit_record = HitRecord::default();
-        if
-        /*world.hit(&ray, 0.001, f32::INFINITY, &mut hit_record)*/
-        hit(&ray, world, 0.001, f32::INFINITY, &mut hit_record) != 0 {
+        /*if world.hit(&ray, 0.001, f32::INFINITY, &mut hit_record)*/
+        if hit(
+            &ray,
+            world,
+            world_len,
+            0.001,
+            f32::INFINITY,
+            &mut hit_record,
+        ) != 0
+        {
             let mut scatter = Scatter::default();
 
             if material.scatter(&ray, &hit_record, rng, &mut scatter) != 0 {
@@ -135,7 +156,8 @@ pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
     #[spirv(local_invocation_id)] local_id: UVec3,
     #[spirv(push_constant)] constants: &ShaderConstants,
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] out: &mut [Vec4],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] world: &[pod::Sphere],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] out: &mut [Vec4],
 ) {
     let x = id.y;
     let y = id.z;
@@ -147,17 +169,6 @@ pub fn main_cs(
     if y >= constants.height {
         return;
     }
-
-    let world = [
-        Sphere {
-            center: vec3(0.0, 1.0, 0.0),
-            radius: 1.0,
-        },
-        Sphere {
-            center: vec3(-4.0, 1.0, 0.0),
-            radius: 1.0,
-        },
-    ];
 
     let material = Lambertian {
         albedo: vec3(0.4, 0.2, 0.1),
@@ -182,7 +193,13 @@ pub fn main_cs(
     let v = (y as f32 + rng.next_f32()) / (constants.height - 1) as f32;
 
     let ray = camera.get_ray(u, v, &mut rng);
-    let color = ray_color(&ray, &world, &material, &mut rng); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
+    let color = ray_color(
+        &ray,
+        world,
+        constants.world_len as usize,
+        &material,
+        &mut rng,
+    ); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
 
     let scale = 1.0 / 1024.0;
 

@@ -100,6 +100,7 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
     let push_constants = ShaderConstants {
         width: width as u32,
         height: height as u32,
+        world_len: 0,
     };
 
     let mut encoder =
