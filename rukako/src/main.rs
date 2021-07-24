@@ -176,7 +176,7 @@ async fn run(
         for _ in 0..n_samples {
             push_constants.seed = rng.gen();
             cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
-            cpass.dispatch((width as u32 + 31) / 32, (width as u32 + 31) / 32, 1);
+            cpass.dispatch((width as u32 + 31) / 32, (height as u32 + 31) / 32, 1);
         }
     }
 
@@ -225,5 +225,5 @@ async fn run(
 
 fn main() {
     env_logger::init();
-    pollster::block_on(run(1200, 675, 1000, "out.png"));
+    pollster::block_on(run(1200, 675, 100, "out.png"));
 }
