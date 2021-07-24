@@ -109,7 +109,7 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         cpass.set_pipeline(&compute_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
         cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
-        cpass.dispatch((width as u32 + 7) / 8, (height as u32 + 7) / 8, 1);
+        cpass.dispatch(1, width as u32, height as u32);
     }
 
     encoder.copy_buffer_to_buffer(
@@ -133,6 +133,7 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         let png_encoder = PngEncoder::new(File::create(output_png_file_name).unwrap());
 
         let v4: &[f32] = bytemuck::cast_slice(&padded_buffer[..]);
+        dbg!(v4[0]);
 
         let rgba: Vec<u8> = v4
             .iter()

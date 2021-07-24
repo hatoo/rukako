@@ -8,10 +8,14 @@
 use camera::Camera;
 use rand::DefaultRng;
 use ray::Ray;
-use spirv_std::glam::{vec3, vec4, UVec3, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
 use spirv_std::num_traits::FloatConst;
+use spirv_std::{
+    arch::control_barrier,
+    glam::{vec3, vec4, UVec3, Vec3, Vec4},
+    memory::Semantics,
+};
 
 use bytemuck::{Pod, Zeroable};
 
@@ -81,14 +85,15 @@ fn ray_color(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
 }
 
 // LocalSize/numthreads of (x = 64, y = 1, z = 1)
-#[spirv(compute(threads(8, 8, 1)))]
+#[spirv(compute(threads(1024, 1, 1)))]
 pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
+    #[spirv(local_invocation_id)] local_id: UVec3,
     #[spirv(push_constant)] constants: &ShaderConstants,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] out: &mut [Vec4],
 ) {
-    let x = id.x;
-    let y = id.y;
+    let x = id.y;
+    let y = id.z;
 
     if x >= constants.width {
         return;
@@ -98,11 +103,9 @@ pub fn main_cs(
         return;
     }
 
-    let mut rng = DefaultRng::new(y * constants.width + x);
-    let scale = rng.next_f32();
+    let seed = id.x * (constants.width * constants.height) + constants.width * y + x;
+    let mut rng = DefaultRng::new(seed);
 
-    out[(y * constants.width + x) as usize] = (Vec3::ONE * scale).extend(1.0);
-    /*
     let camera = Camera::new(
         vec3(0.0, 0.0, 0.0),
         vec3(0.0, 0.0, 1.0),
@@ -115,15 +118,21 @@ pub fn main_cs(
         1.0,
     );
 
-    let u = x as f32 / (constants.width - 1) as f32;
-    let v = y as f32 / (constants.height - 1) as f32;
+    let u = (x as f32 + rng.next_f32()) / (constants.width - 1) as f32;
+    let v = (y as f32 + rng.next_f32()) / (constants.height - 1) as f32;
 
-    let ray = camera.get_ray(u, v);
+    let ray = camera.get_ray(u, v, &mut rng);
     let color = ray_color(vec3(0.0, 0.0, 1.0), 0.5, &ray);
 
-    // let mut rng = Pcg32::
+    let scale = 1.0 / 1024.0;
 
-    // let r = x as f32 / (constants.width - 1) as f32;
-    out[(y * constants.width + x) as usize] = color.extend(1.0);
-    */
+    unsafe {
+        control_barrier::<0, 0, { Semantics::NONE.bits() }>();
+        for i in 0..1024 {
+            if i == local_id.x {
+                out[(y * constants.width + x) as usize] += color.extend(1.0) * scale;
+            }
+            control_barrier::<0, 0, { Semantics::NONE.bits() }>();
+        }
+    }
 }
