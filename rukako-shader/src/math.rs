@@ -72,12 +72,19 @@ pub fn sphere_uv(point: Vec3) -> (f32, f32) {
 }
 
 pub trait IsNearZero {
-    fn is_near_zero(&self) -> bool;
+    fn is_near_zero(&self) -> u32;
 }
 
 impl IsNearZero for Vec3 {
-    fn is_near_zero(&self) -> bool {
+    fn is_near_zero(&self) -> u32 {
         const S: f32 = 1e-8;
-        self.x.abs() < S && self.y.abs() < S && self.z.abs() < S
+        if self.x.abs() < S {
+            if self.y.abs() < S {
+                if self.z.abs() < S {
+                    return 1;
+                }
+            }
+        }
+        0
     }
 }

@@ -1,12 +1,46 @@
 use std::{borrow::Cow, fs::File, num::NonZeroU64, path::Path};
 
 use image::{png::PngEncoder, ImageEncoder};
-use rukako_shader::ShaderConstants;
+use rand::prelude::StdRng;
+use rand::prelude::*;
+use rukako_shader::{pod::Sphere, ShaderConstants};
+use spirv_std::glam::vec3;
 use wgpu::util::DeviceExt;
 
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));
 
-async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>) {
+fn random_scene() -> Vec<Sphere> {
+    let mut rng = StdRng::from_entropy();
+
+    let mut world = Vec::new();
+
+    world.push(Sphere::new(vec3(0.0, -1000.0, 0.0), 1000.0));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let center = vec3(
+                a as f32 + 0.9 * rng.gen::<f32>(),
+                0.2,
+                b as f32 + 0.9 * rng.gen::<f32>(),
+            );
+
+            world.push(Sphere::new(center, 0.2));
+        }
+    }
+
+    world.push(Sphere::new(vec3(0.0, 1.0, 0.0), 1.0));
+    world.push(Sphere::new(vec3(-4.0, 1.0, 0.0), 1.0));
+    world.push(Sphere::new(vec3(4.0, 1.0, 0.0), 1.0));
+
+    world
+}
+
+async fn run(
+    width: usize,
+    height: usize,
+    n_samples: usize,
+    output_png_file_name: impl AsRef<Path>,
+) {
     let instance = wgpu::Instance::new(wgpu::BackendBit::all());
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions::default())
@@ -36,13 +70,25 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         flags: wgpu::ShaderFlags::default(),
     });
 
+    let world = random_scene();
+
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: None,
         entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                count: None,
+                visibility: wgpu::ShaderStage::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    has_dynamic_offset: false,
+                    min_binding_size: Some(NonZeroU64::new(1).unwrap()),
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                },
+            },
             // XXX - some graphics cards do not support empty bind layout groups, so
             // create a dummy entry.
             wgpu::BindGroupLayoutEntry {
-                binding: 0,
+                binding: 1,
                 count: None,
                 visibility: wgpu::ShaderStage::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
@@ -88,30 +134,59 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
             | wgpu::BufferUsage::COPY_SRC,
     });
 
+    let world_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("world"),
+        contents: bytemuck::cast_slice(world.as_slice()),
+        usage: wgpu::BufferUsage::STORAGE
+            // | wgpu::BufferUsage::COPY_DST
+            // | wgpu::BufferUsage::COPY_SRC,
+    });
+
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: None,
         layout: &bind_group_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: storage_buffer.as_entire_binding(),
-        }],
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: world_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: storage_buffer.as_entire_binding(),
+            },
+        ],
     });
 
-    let push_constants = ShaderConstants {
+    let mut rng = StdRng::from_entropy();
+
+    let mut push_constants = ShaderConstants {
         width: width as u32,
         height: height as u32,
+        world_len: world.len() as u32,
+        seed: rng.gen(),
     };
+
+    for i in 0..n_samples {
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        {
+            let mut cpass =
+                encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            cpass.set_pipeline(&compute_pipeline);
+            cpass.set_bind_group(0, &bind_group, &[]);
+
+            push_constants.seed = rng.gen();
+            cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
+            cpass.dispatch((width as u32 + 31) / 32, (height as u32 + 31) / 32, 1);
+        }
+        queue.submit(Some(encoder.finish()));
+        device.poll(wgpu::Maintain::Wait);
+        eprint!("\rSaamples: {} / {} ", i + 1, n_samples);
+    }
+    eprint!("\nDone");
 
     let mut encoder =
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-    {
-        let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-        cpass.set_pipeline(&compute_pipeline);
-        cpass.set_bind_group(0, &bind_group, &[]);
-        cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
-        cpass.dispatch((width as u32 + 7) / 8, (height as u32 + 7) / 8, 1);
-    }
-
     encoder.copy_buffer_to_buffer(
         &storage_buffer,
         0,
@@ -133,10 +208,13 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
         let png_encoder = PngEncoder::new(File::create(output_png_file_name).unwrap());
 
         let v4: &[f32] = bytemuck::cast_slice(&padded_buffer[..]);
+        dbg!(v4[0]);
+
+        let scale = 1.0 / n_samples as f32;
 
         let rgba: Vec<u8> = v4
             .iter()
-            .map(|f| (256.0 * f.clamp(0.0, 0.999)) as u8)
+            .map(|f| (256.0 * (f * scale).clamp(0.0, 0.999)) as u8)
             .collect();
         png_encoder
             .write_image(
@@ -154,5 +232,5 @@ async fn run(width: usize, height: usize, output_png_file_name: impl AsRef<Path>
 
 fn main() {
     env_logger::init();
-    pollster::block_on(run(256, 256, "out.png"));
+    pollster::block_on(run(1200, 800, 500, "out.png"));
 }

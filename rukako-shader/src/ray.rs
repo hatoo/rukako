@@ -1,6 +1,6 @@
 use spirv_std::glam::Vec3;
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Default)]
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,
