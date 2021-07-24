@@ -51,7 +51,7 @@ fn random_scene() -> Vec<Sphere> {
                             rng.gen_range(0.5..1.0),
                             rng.gen_range(0.5..1.0),
                         );
-                        let fuzz = rng.gen_range(0.5..1.0);
+                        let fuzz = rng.gen_range(0.0..0.5);
 
                         world.push(Sphere::new(
                             center,
