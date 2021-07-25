@@ -265,7 +265,6 @@ async fn run(
         let png_encoder = PngEncoder::new(File::create(output_png_file_name).unwrap());
 
         let v4: &[f32] = bytemuck::cast_slice(&padded_buffer[..]);
-        dbg!(v4[0]);
 
         let scale = 1.0 / n_samples as f32;
 
