@@ -3,7 +3,7 @@ use spirv_std::num_traits::Float;
 
 use crate::{
     hittable::{HitRecord, Hittable},
-    pod::EnumMaterial,
+    material::EnumMaterial,
 };
 
 #[derive(Clone, Copy, Default)]

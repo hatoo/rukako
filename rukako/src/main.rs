@@ -4,7 +4,7 @@ use image::{png::PngEncoder, ImageEncoder};
 use rand::prelude::StdRng;
 use rand::prelude::*;
 use rukako_shader::{
-    pod::{EnumMaterialPod, Lambertian, Sphere},
+    pod::{EnumMaterialPod, SpherePod},
     ShaderConstants, NUM_THREADS_X, NUM_THREADS_Y,
 };
 use spirv_std::glam::{vec3, Vec3};
@@ -12,12 +12,12 @@ use wgpu::util::DeviceExt;
 
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));
 
-fn random_scene() -> Vec<Sphere> {
+fn random_scene() -> Vec<SpherePod> {
     let mut rng = StdRng::from_entropy();
 
     let mut world = Vec::new();
 
-    world.push(Sphere::new(
+    world.push(SpherePod::new(
         vec3(0.0, -1000.0, 0.0),
         1000.0,
         EnumMaterialPod::new_lambertian(vec3(0.5, 0.5, 0.5)),
@@ -39,7 +39,7 @@ fn random_scene() -> Vec<Sphere> {
                         let albedo = vec3(rng.gen(), rng.gen(), rng.gen())
                             * vec3(rng.gen(), rng.gen(), rng.gen());
 
-                        world.push(Sphere::new(
+                        world.push(SpherePod::new(
                             center,
                             0.3,
                             EnumMaterialPod::new_lambertian(albedo),
@@ -53,13 +53,13 @@ fn random_scene() -> Vec<Sphere> {
                         );
                         let fuzz = rng.gen_range(0.0..0.5);
 
-                        world.push(Sphere::new(
+                        world.push(SpherePod::new(
                             center,
                             0.2,
                             EnumMaterialPod::new_metal(albedo, fuzz),
                         ));
                     }
-                    _ => world.push(Sphere::new(
+                    _ => world.push(SpherePod::new(
                         center,
                         0.2,
                         EnumMaterialPod::new_dielectric(1.5),
@@ -69,17 +69,17 @@ fn random_scene() -> Vec<Sphere> {
         }
     }
 
-    world.push(Sphere::new(
+    world.push(SpherePod::new(
         vec3(0.0, 1.0, 0.0),
         1.0,
         EnumMaterialPod::new_dielectric(1.5),
     ));
-    world.push(Sphere::new(
+    world.push(SpherePod::new(
         vec3(-4.0, 1.0, 0.0),
         1.0,
         EnumMaterialPod::new_lambertian(vec3(0.4, 0.2, 0.1)),
     ));
-    world.push(Sphere::new(
+    world.push(SpherePod::new(
         vec3(4.0, 1.0, 0.0),
         1.0,
         EnumMaterialPod::new_metal(vec3(0.7, 0.6, 0.5), 0.0),

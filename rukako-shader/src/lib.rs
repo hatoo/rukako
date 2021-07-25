@@ -7,7 +7,7 @@
 
 use camera::Camera;
 use hittable::{HitRecord, Hittable};
-use material::{Lambertian, Material, Scatter};
+use material::{Material, Scatter};
 use rand::DefaultRng;
 use ray::Ray;
 #[cfg(not(target_arch = "spirv"))]
