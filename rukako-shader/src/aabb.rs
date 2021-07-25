@@ -22,8 +22,8 @@ impl AABB {
                 swap(&mut t0, &mut t1);
             }
 
-            t_min = if t0 > t_min { t0 } else { t_min };
-            t_max = if t1 < t_max { t1 } else { t_max };
+            t_min = t0.max(t_min);
+            t_max = t1.min(t_max);
 
             if t_max <= t_min {
                 return Bool32::FALSE;
@@ -38,8 +38,8 @@ impl AABB {
                 swap(&mut t0, &mut t1);
             }
 
-            t_min = if t0 > t_min { t0 } else { t_min };
-            t_max = if t1 < t_max { t1 } else { t_max };
+            t_min = t0.max(t_min);
+            t_max = t1.min(t_max);
 
             if t_max <= t_min {
                 return Bool32::FALSE;
@@ -54,8 +54,8 @@ impl AABB {
                 swap(&mut t0, &mut t1);
             }
 
-            t_min = if t0 > t_min { t0 } else { t_min };
-            t_max = if t1 < t_max { t1 } else { t_max };
+            t_min = t0.max(t_min);
+            t_max = t1.min(t_max);
 
             if t_max <= t_min {
                 return Bool32::FALSE;
