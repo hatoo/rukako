@@ -165,9 +165,12 @@ impl<'a> Material for Dielectric<'a> {
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
         let cannot_refract = refraction_ratio * sin_theta > 1.0;
 
-        let direction = if cannot_refract {
-            reflect(unit_direction, hit_record.normal)
-        } else if reflectance(cos_theta, refraction_ratio) > rng.next_f32() {
+        let direction = if Bool32::new(cannot_refract)
+            .or(Bool32::new(
+                reflectance(cos_theta, refraction_ratio) > rng.next_f32(),
+            ))
+            .into()
+        {
             reflect(unit_direction, hit_record.normal)
         } else {
             refract(unit_direction, hit_record.normal, refraction_ratio)

@@ -14,6 +14,14 @@ impl Bool32 {
             Self::FALSE
         }
     }
+
+    pub fn or(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+
+    pub fn and(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
 }
 
 impl Into<bool> for Bool32 {
@@ -24,10 +32,6 @@ impl Into<bool> for Bool32 {
 
 impl From<bool> for Bool32 {
     fn from(b: bool) -> Self {
-        if b {
-            Self::TRUE
-        } else {
-            Self::FALSE
-        }
+        Self::new(b)
     }
 }
