@@ -1,5 +1,6 @@
 // use rand::Rng;
-use spirv_std::glam::{vec3, Vec3};
+use spirv_std::glam::Vec3;
+#[allow(unused_imports)]
 use spirv_std::num_traits::Float;
 
 use crate::math::random_in_unit_disk;
@@ -7,7 +8,6 @@ use crate::rand::DefaultRng;
 use crate::ray::Ray;
 
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Camera {
     origin: Vec3,
     lower_left_corner: Vec3,
