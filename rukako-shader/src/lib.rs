@@ -5,10 +5,9 @@
     register_attr(spirv)
 )]
 
-use crate::bool::Bool32;
 use crate::rand::DefaultRng;
 use camera::Camera;
-use hittable::{HitRecord, Hittable};
+use hittable::HitRecord;
 use material::{Material, Scatter};
 use ray::Ray;
 use spirv_std::glam::{vec3, UVec3, Vec3, Vec4};
