@@ -6,7 +6,7 @@ use spirv_std::glam::Vec3;
 
 use super::SpherePod;
 
-#[derive(Clone, Copy, Zeroable, Pod)]
+#[derive(Clone, Copy, Debug, Zeroable, Pod)]
 #[repr(C)]
 pub struct BVHNodePod {
     minimum: [f32; 4],
@@ -65,7 +65,7 @@ fn create_bvh_inner(
     let mid = (l + r) / 2;
 
     let left = create_bvh_inner(world, time0, time1, l, mid, out, rng);
-    let right = create_bvh_inner(world, time0, time1, mid + 1, r, out, rng);
+    let right = create_bvh_inner(world, time0, time1, mid, r, out, rng);
 
     match (left, right) {
         (Some(left), Some(right)) => {
