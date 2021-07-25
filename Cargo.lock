@@ -360,6 +360,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37ab347416e802de484e4d03c7316c48f1ecb56574dfd4a46a80f173ce1de04d"
 
 [[package]]
+name = "float-ord"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64860170d0b2dd3f1c5af6d96aafa47b5928ac0163116c1ab27313480d82b547"
+
+[[package]]
 name = "foreign-types"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1173,6 +1179,8 @@ name = "rukako-shader"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "float-ord",
+ "rand",
  "spirv-std",
 ]
 

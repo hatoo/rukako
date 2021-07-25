@@ -1,8 +1,9 @@
-use spirv_std::glam::Vec3;
+use spirv_std::glam::{vec3, Vec3};
 #[allow(unused_imports)]
 use spirv_std::num_traits::Float;
 
 use crate::{
+    aabb::AABB,
     bool::Bool32,
     hittable::{HitRecord, Hittable},
     material::EnumMaterial,
@@ -60,5 +61,12 @@ impl Hittable for Sphere {
             self.matelial,
         );
         Bool32::TRUE
+    }
+
+    fn bounding_box(&self, _time0: f32, _time1: f32) -> AABB {
+        AABB {
+            minimum: self.center - vec3(self.radius, self.radius, self.radius),
+            maximum: self.center + vec3(self.radius, self.radius, self.radius),
+        }
     }
 }

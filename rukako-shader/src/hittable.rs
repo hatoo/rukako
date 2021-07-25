@@ -1,6 +1,6 @@
 use spirv_std::glam::Vec3;
 
-use crate::{bool::Bool32, material::EnumMaterial, ray::Ray};
+use crate::{aabb::AABB, bool::Bool32, material::EnumMaterial, ray::Ray};
 
 #[derive(Clone, Default)]
 pub struct HitRecord {
@@ -38,6 +38,7 @@ impl HitRecord {
 
 pub trait Hittable {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32, hit_record: &mut HitRecord) -> Bool32;
+    fn bounding_box(&self, time0: f32, time1: f32) -> AABB;
 }
 
 /*

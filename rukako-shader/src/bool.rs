@@ -1,3 +1,5 @@
+use core::ops::Not;
+
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub struct Bool32(u32);
 
@@ -21,6 +23,18 @@ impl Bool32 {
 
     pub fn and(self, rhs: Self) -> Self {
         Self(self.0 & rhs.0)
+    }
+}
+
+impl Not for Bool32 {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        if self.into() {
+            Self::FALSE
+        } else {
+            Self::TRUE
+        }
     }
 }
 
