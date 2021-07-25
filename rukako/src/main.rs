@@ -7,7 +7,7 @@ use rukako_shader::{
     pod::{EnumMaterialPod, SpherePod},
     ShaderConstants, NUM_THREADS_X, NUM_THREADS_Y,
 };
-use spirv_std::glam::{vec3, Vec3};
+use spirv_std::glam::vec3;
 use wgpu::util::DeviceExt;
 
 const SHADER: &[u8] = include_bytes!(env!("rukako_shader.spv"));

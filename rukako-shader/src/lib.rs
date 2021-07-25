@@ -10,15 +10,12 @@ use hittable::{HitRecord, Hittable};
 use material::{Material, Scatter};
 use rand::DefaultRng;
 use ray::Ray;
+use spirv_std::glam::{vec3, UVec3, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
 use spirv_std::macros::spirv;
+#[allow(unused_imports)]
 use spirv_std::num_traits::Float;
 use spirv_std::num_traits::FloatConst;
-use spirv_std::{
-    arch::control_barrier,
-    glam::{vec3, UVec3, Vec3, Vec4},
-    memory::Semantics,
-};
 
 use bytemuck::{Pod, Zeroable};
 

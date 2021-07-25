@@ -1,4 +1,5 @@
 use spirv_std::glam::{vec3, Vec3, Vec4, Vec4Swizzles};
+#[allow(unused_imports)]
 use spirv_std::num_traits::Float;
 
 use crate::{

@@ -1,12 +1,7 @@
 use bytemuck::{Pod, Zeroable};
-use spirv_std::glam::{vec3, Vec3, Vec4, Vec4Swizzles};
+use spirv_std::glam::{vec3, Vec3};
+#[allow(unused_imports)]
 use spirv_std::num_traits::Float;
-
-use crate::hittable::{HitRecord, Hittable};
-use crate::material::{Material, Scatter};
-use crate::math::{random_in_unit_sphere, IsNearZero};
-use crate::rand::DefaultRng;
-use crate::ray::Ray;
 
 #[derive(Clone, Copy, Zeroable, Pod)]
 #[repr(C)]

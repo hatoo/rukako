@@ -56,5 +56,4 @@ impl<T: Hittable> Hittable for [T] {
         hit
     }
 }
-
 */
