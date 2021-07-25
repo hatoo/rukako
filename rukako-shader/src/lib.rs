@@ -61,13 +61,17 @@ fn hit(
     hit
 }
 
-fn ray_color(ray: &Ray, world: &[sphere::Sphere], world_len: usize, rng: &mut DefaultRng) -> Vec3 {
+fn ray_color(
+    mut ray: Ray,
+    world: &[sphere::Sphere],
+    world_len: usize,
+    rng: &mut DefaultRng,
+) -> Vec3 {
     let mut color = vec3(1.0, 1.0, 1.0);
-    let mut ray = *ray;
+    let mut hit_record = HitRecord::default();
+    let mut scatter = Scatter::default();
 
     for _ in 0..50 {
-        let mut hit_record = HitRecord::default();
-        /*if world.hit(&ray, 0.001, f32::INFINITY, &mut hit_record)*/
         if hit(
             &ray,
             world,
@@ -77,8 +81,6 @@ fn ray_color(ray: &Ray, world: &[sphere::Sphere], world_len: usize, rng: &mut De
             &mut hit_record,
         ) != 0
         {
-            let mut scatter = Scatter::default();
-
             let material = hit_record.material;
 
             if material.scatter(&ray, &hit_record, rng, &mut scatter) != 0 {
@@ -96,56 +98,6 @@ fn ray_color(ray: &Ray, world: &[sphere::Sphere], world_len: usize, rng: &mut De
     }
 
     color
-
-    /*
-    let mut hit_record = HitRecord::default();
-    if world.hit(ray, 0.001, f32::INFINITY, &mut hit_record) != 0 {
-        let mut scatter = Scatter::default();
-
-        return if material.scatter(ray, &hit_record, rng, &mut scatter) != 0 {
-            // scatter.color * ray_color(&scatter.ray, world, material, depth - 1, rng)
-            ray_color(&scatter.ray, world, material, rng)
-        } else {
-            vec3(0.0, 0.0, 0.0)
-        };
-    }
-    */
-    /*
-    match world.hit(ray, 0.001, f32::INFINITY).as_ref() {
-        Some(hit_record) => {}
-        None => {} /*
-                   return if let Some(Scatter {
-                       color,
-                       ray: scatterd,
-                   }) = material.scatter(ray, &hit_record, rng)
-                   {
-                       color * ray_color(&scatterd, world, material, depth - 1, rng)
-                   } else {
-                       vec3(0.0, 0.0, 0.0)
-                   };
-                   */
-    }
-    */
-    /*
-    let unit_direction = ray.direction.normalize();
-    let t = 0.5 * (unit_direction.y + 1.0);
-    vec3(1.0, 1.0, 1.0).lerp(vec3(0.5, 0.7, 1.0), t)
-    */
-}
-
-fn ray_color_test(center: Vec3, radius: f32, ray: &Ray) -> Vec3 {
-    let oc = ray.origin - center;
-    let a = ray.direction.dot(ray.direction);
-    let b = 2.0 * oc.dot(ray.direction);
-    let c = oc.dot(oc) - radius * radius;
-
-    let discriminant = b * b - 4.0 * a * c;
-
-    if discriminant > 0.0 {
-        vec3(1.0, 0.0, 0.0)
-    } else {
-        vec3(0.5, 0.5, 0.5)
-    }
 }
 
 pub const NUM_THREADS_X: u32 = 8;
@@ -154,7 +106,6 @@ pub const NUM_THREADS_Y: u32 = 8;
 #[spirv(compute(threads(/* NUM_THREADS_X */ 8, /* NUM_THREADS_Y */ 8, 1)))]
 pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
-    #[spirv(local_invocation_id)] local_id: UVec3,
     #[spirv(push_constant)] constants: &ShaderConstants,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] world: &[sphere::Sphere],
     #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] out: &mut [Vec4],
@@ -189,28 +140,7 @@ pub fn main_cs(
     let v = (y as f32 + rng.next_f32()) / (constants.height - 1) as f32;
 
     let ray = camera.get_ray(u, v, &mut rng);
-    let color = ray_color(&ray, world, constants.world_len as usize, &mut rng); // ray_color_test(vec3(0.0, 0.0, 1.0), 0.5, &ray);
+    let color = ray_color(ray, world, constants.world_len as usize, &mut rng);
 
-    /*
-    let mut color = vec3(1.0, 1.0, 1.0);
-
-    if world[1].matelial.t == 1 {
-        color = vec3(1.0, 0.0, 0.0);
-    }
-    */
-
-    //let scale = 1.0 / 512.0;
     out[((constants.height - y - 1) * constants.width + x) as usize] += color.extend(1.0);
-    /*
-    unsafe {
-        control_barrier::<0, 0, { Semantics::NONE.bits() }>();
-        for i in 0..512 {
-            if i == local_id.x {
-                out[((constants.height - y - 1) * constants.width + x) as usize] +=
-                    color.extend(1.0) * scale;
-            }
-            control_barrier::<0, 0, { Semantics::NONE.bits() }>();
-        }
-    }
-    */
 }
