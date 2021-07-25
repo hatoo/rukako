@@ -1165,7 +1165,6 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "image",
- "png",
  "pollster",
  "rand",
  "rukako-shader",

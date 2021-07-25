@@ -12,7 +12,6 @@ env_logger = "0.8"
 pollster = "0.2"
 image = "0.23"
 anyhow = "1.0"
-png = "0.16.8"
 rand = "0.8"
 
 rukako-shader = { path = "../rukako-shader" }
