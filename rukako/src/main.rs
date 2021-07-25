@@ -1,7 +1,6 @@
 use std::{borrow::Cow, fs::File, num::NonZeroU64, path::Path};
 
 use image::{png::PngEncoder, ImageEncoder};
-use rand::prelude::StdRng;
 use rand::prelude::*;
 use rukako_shader::{
     pod::{EnumMaterialPod, SpherePod},
