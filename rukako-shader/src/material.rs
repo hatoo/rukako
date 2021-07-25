@@ -21,15 +21,33 @@ pub trait Material {
         ray: &Ray,
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
-        sucatter: &mut Scatter,
+        scatter: &mut Scatter,
     ) -> u32;
 }
 
 #[derive(Clone, Copy, Default)]
 #[repr(C)]
+struct EnumMaterialData {
+    v0: Vec4,
+}
+
+#[derive(Clone, Copy, Default)]
+#[repr(C)]
 pub struct EnumMaterial {
-    pub data: Vec4,
-    pub t: u32,
+    data: EnumMaterialData,
+    t: u32,
+}
+
+struct Lambertian<'a> {
+    data: &'a EnumMaterialData,
+}
+
+struct Metal<'a> {
+    data: &'a EnumMaterialData,
+}
+
+struct Dielectric<'a> {
+    data: &'a EnumMaterialData,
 }
 
 fn reflect(v: Vec3, n: Vec3) -> Vec3 {
@@ -49,13 +67,14 @@ fn reflectance(cosine: f32, ref_idx: f32) -> f32 {
     r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
 }
 
-impl EnumMaterial {
-    #[inline(always)]
-    pub fn albedo(&self) -> Vec3 {
-        self.data.xyz()
+impl<'a> Lambertian<'a> {
+    fn albedo(&self) -> Vec3 {
+        self.data.v0.xyz()
     }
+}
 
-    fn lambertian_scatter(
+impl<'a> Material for Lambertian<'a> {
+    fn scatter(
         &self,
         ray: &Ray,
         hit_record: &HitRecord,
@@ -82,17 +101,28 @@ impl EnumMaterial {
         };
         1
     }
+}
 
-    fn metal_scatter(
+impl<'a> Metal<'a> {
+    fn albedo(&self) -> Vec3 {
+        self.data.v0.xyz()
+    }
+
+    fn fuzz(&self) -> f32 {
+        self.data.v0.w
+    }
+}
+
+impl<'a> Material for Metal<'a> {
+    fn scatter(
         &self,
         ray: &Ray,
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
     ) -> u32 {
-        let fuzz = self.data.w;
         let reflected = reflect(ray.direction.normalize(), hit_record.normal);
-        let scatterd = reflected + fuzz * random_in_unit_sphere(rng);
+        let scatterd = reflected + self.fuzz() * random_in_unit_sphere(rng);
         if scatterd.dot(hit_record.normal) > 0.0 {
             *scatter = Scatter {
                 color: self.albedo(),
@@ -107,19 +137,26 @@ impl EnumMaterial {
             0
         }
     }
+}
 
-    fn dielectric_scatter(
+impl<'a> Dielectric<'a> {
+    fn ir(&self) -> f32 {
+        self.data.v0.x
+    }
+}
+
+impl<'a> Material for Dielectric<'a> {
+    fn scatter(
         &self,
         ray: &Ray,
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
     ) -> u32 {
-        let ir = self.data.x;
         let refraction_ratio = if hit_record.front_face != 0 {
-            1.0 / ir
+            1.0 / self.ir()
         } else {
-            ir
+            self.ir()
         };
 
         let unit_direction = ray.direction.normalize();
@@ -156,9 +193,9 @@ impl Material for EnumMaterial {
         scatter: &mut Scatter,
     ) -> u32 {
         match self.t {
-            0 => self.lambertian_scatter(ray, hit_record, rng, scatter),
-            1 => self.metal_scatter(ray, hit_record, rng, scatter),
-            _ => self.dielectric_scatter(ray, hit_record, rng, scatter),
+            0 => Lambertian { data: &self.data }.scatter(ray, hit_record, rng, scatter),
+            1 => Metal { data: &self.data }.scatter(ray, hit_record, rng, scatter),
+            _ => Dielectric { data: &self.data }.scatter(ray, hit_record, rng, scatter),
         }
     }
 }

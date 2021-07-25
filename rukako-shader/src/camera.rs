@@ -8,7 +8,6 @@ use crate::rand::DefaultRng;
 use crate::ray::Ray;
 
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Camera {
     origin: Vec3,
     lower_left_corner: Vec3,
