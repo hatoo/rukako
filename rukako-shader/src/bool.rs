@@ -30,11 +30,7 @@ impl Not for Bool32 {
     type Output = Self;
 
     fn not(self) -> Self::Output {
-        if self.into() {
-            Self::FALSE
-        } else {
-            Self::TRUE
-        }
+        Self(1 ^ self.0)
     }
 }
 
