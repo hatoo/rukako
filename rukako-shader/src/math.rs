@@ -79,13 +79,8 @@ pub trait IsNearZero {
 impl IsNearZero for Vec3 {
     fn is_near_zero(&self) -> Bool32 {
         const S: f32 = 1e-8;
-        if self.x.abs() < S {
-            if self.y.abs() < S {
-                if self.z.abs() < S {
-                    return Bool32::TRUE;
-                }
-            }
-        }
-        Bool32::FALSE
+        Bool32::new(self.x.abs() < S)
+            .and(Bool32::new(self.y.abs() < S))
+            .and(Bool32::new(self.z.abs() < S))
     }
 }

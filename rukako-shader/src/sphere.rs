@@ -37,18 +37,15 @@ impl Hittable for Sphere {
 
         let mut root = (-half_b - sqrtd) / a;
 
-        if root < t_min {
+        if Bool32::new(root < t_min)
+            .or(Bool32::new(t_max < root))
+            .into()
+        {
             root = (-half_b + sqrtd) / a;
-            if root < t_min {
-                return Bool32::FALSE;
-            } else if t_max < root {
-                return Bool32::FALSE;
-            }
-        } else if t_max < root {
-            root = (-half_b + sqrtd) / a;
-            if root < t_min {
-                return Bool32::FALSE;
-            } else if t_max < root {
+            if Bool32::new(root < t_min)
+                .or(Bool32::new(t_max < root))
+                .into()
+            {
                 return Bool32::FALSE;
             }
         }

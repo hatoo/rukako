@@ -5,6 +5,7 @@
     register_attr(spirv)
 )]
 
+use crate::bool::Bool32;
 use camera::Camera;
 use hittable::{HitRecord, Hittable};
 use material::{Material, Scatter};
@@ -45,14 +46,14 @@ fn hit(
     t_min: f32,
     t_max: f32,
     hit_record: &mut HitRecord,
-) -> u32 {
+) -> Bool32 {
     let mut closest_so_far = t_max;
-    let mut hit = 0;
+    let mut hit = Bool32::FALSE;
 
     for i in 0..len {
         if world[i].hit(ray, t_min, closest_so_far, hit_record).into() {
             closest_so_far = hit_record.t;
-            hit = 1;
+            hit = Bool32::TRUE;
         }
     }
 
@@ -77,7 +78,8 @@ fn ray_color(
             0.001,
             f32::INFINITY,
             &mut hit_record,
-        ) != 0
+        )
+        .into()
         {
             let material = hit_record.material;
 
