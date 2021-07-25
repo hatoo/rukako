@@ -67,21 +67,17 @@ fn create_bvh_inner(
     let left = create_bvh_inner(world, time0, time1, l, mid, out, rng);
     let right = create_bvh_inner(world, time0, time1, mid, r, out, rng);
 
-    match (left, right) {
-        (Some(left), Some(right)) => {
-            out[i] = BVHNodeInner {
-                aabb: surrounding_box(out[left].aabb, out[right].aabb),
-                child: BVHChildInner::Two(left, right),
-            };
-        }
-        (Some(left), None) => {
-            out[i] = BVHNodeInner {
-                aabb: out[left].aabb,
-                child: BVHChildInner::One(left),
-            };
-        }
+    out[i] = match (left, right) {
+        (Some(left), Some(right)) => BVHNodeInner {
+            aabb: surrounding_box(out[left].aabb, out[right].aabb),
+            child: BVHChildInner::Two(left, right),
+        },
+        (Some(left), None) => BVHNodeInner {
+            aabb: out[left].aabb,
+            child: BVHChildInner::One(left),
+        },
         _ => unreachable!(),
-    }
+    };
 
     Some(i)
 }
