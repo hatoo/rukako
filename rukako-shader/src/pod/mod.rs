@@ -6,18 +6,18 @@ use spirv_std::num_traits::Float;
 #[derive(Clone, Copy, Zeroable, Pod)]
 #[repr(C)]
 pub struct SpherePod {
-    pub center: [f32; 3],
-    pub _pad0: f32,
-    pub radius: f32,
-    pub _pad1: [f32; 3],
-    pub material: EnumMaterialPod,
+    center: [f32; 3],
+    _pad0: f32,
+    radius: f32,
+    _pad1: [f32; 3],
+    material: EnumMaterialPod,
 }
 #[derive(Clone, Copy, Default, Zeroable, Pod)]
 #[repr(C)]
 pub struct EnumMaterialPod {
-    pub data: [f32; 4],
-    pub t: u32,
-    pub _pad: [f32; 3],
+    data: [f32; 4],
+    t: u32,
+    _pad: [f32; 3],
 }
 
 impl SpherePod {
