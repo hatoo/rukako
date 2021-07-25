@@ -19,6 +19,7 @@ use spirv_std::num_traits::FloatConst;
 
 use bytemuck::{Pod, Zeroable};
 
+pub mod bool;
 pub mod camera;
 pub mod hittable;
 pub mod material;
