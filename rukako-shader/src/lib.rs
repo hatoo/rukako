@@ -37,10 +37,10 @@ pub mod sphere;
 pub struct ShaderConstants {
     pub width: u32,
     pub height: u32,
-    pub world_len: u32,
     pub seed: u32,
 }
 
+/*
 fn hit(
     ray: &Ray,
     world: &[sphere::Sphere],
@@ -61,11 +61,12 @@ fn hit(
 
     hit
 }
+*/
 
 fn ray_color(
     mut ray: Ray,
     world: &[sphere::Sphere],
-    world_len: usize,
+    bvh: &[bvh::BVHNode],
     rng: &mut DefaultRng,
 ) -> Vec3 {
     let mut color = vec3(1.0, 1.0, 1.0);
@@ -73,15 +74,9 @@ fn ray_color(
     let mut scatter = Scatter::default();
 
     for _ in 0..50 {
-        if hit(
-            &ray,
-            world,
-            world_len,
-            0.001,
-            f32::INFINITY,
-            &mut hit_record,
-        )
-        .into()
+        if (bvh::BVH { nodes: bvh })
+            .hit(&ray, 0.001, f32::INFINITY, &mut hit_record, world)
+            .into()
         {
             let material = hit_record.material;
 
@@ -113,7 +108,8 @@ pub fn main_cs(
     #[spirv(global_invocation_id)] id: UVec3,
     #[spirv(push_constant)] constants: &ShaderConstants,
     #[spirv(storage_buffer, descriptor_set = 0, binding = 0)] world: &[sphere::Sphere],
-    #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] out: &mut [Vec4],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 1)] bvh: &[bvh::BVHNode],
+    #[spirv(storage_buffer, descriptor_set = 0, binding = 2)] out: &mut [Vec4],
 ) {
     let x = id.x;
     let y = id.y;
@@ -145,7 +141,7 @@ pub fn main_cs(
     let v = (y as f32 + rng.next_f32()) / (constants.height - 1) as f32;
 
     let ray = camera.get_ray(u, v, &mut rng);
-    let color = ray_color(ray, world, constants.world_len as usize, &mut rng);
+    let color = ray_color(ray, world, bvh, &mut rng);
 
     out[((constants.height - y - 1) * constants.width + x) as usize] += color.extend(1.0);
 }

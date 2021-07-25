@@ -3,7 +3,7 @@ use std::{borrow::Cow, fs::File, num::NonZeroU64, path::Path};
 use image::{png::PngEncoder, ImageEncoder};
 use rand::prelude::*;
 use rukako_shader::{
-    pod::{EnumMaterialPod, SpherePod},
+    pod::{bvh::create_bvh, EnumMaterialPod, SpherePod},
     ShaderConstants, NUM_THREADS_X, NUM_THREADS_Y,
 };
 use spirv_std::glam::vec3;
@@ -122,7 +122,9 @@ async fn run(
         flags: wgpu::ShaderFlags::default(),
     });
 
-    let world = random_scene();
+    let mut rng = StdRng::from_entropy();
+    let mut world = random_scene();
+    let bvh = create_bvh(&mut world, 0.0, 1.0, &mut rng);
 
     let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: None,
@@ -137,10 +139,20 @@ async fn run(
                     ty: wgpu::BufferBindingType::Storage { read_only: true },
                 },
             },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                count: None,
+                visibility: wgpu::ShaderStage::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    has_dynamic_offset: false,
+                    min_binding_size: Some(NonZeroU64::new(1).unwrap()),
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                },
+            },
             // XXX - some graphics cards do not support empty bind layout groups, so
             // create a dummy entry.
             wgpu::BindGroupLayoutEntry {
-                binding: 1,
+                binding: 2,
                 count: None,
                 visibility: wgpu::ShaderStage::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
@@ -194,6 +206,14 @@ async fn run(
             // | wgpu::BufferUsage::COPY_SRC,
     });
 
+    let bvh_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("bvh"),
+        contents: bytemuck::cast_slice(bvh.as_slice()),
+        usage: wgpu::BufferUsage::STORAGE
+            // | wgpu::BufferUsage::COPY_DST
+            // | wgpu::BufferUsage::COPY_SRC,
+    });
+
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: None,
         layout: &bind_group_layout,
@@ -204,17 +224,18 @@ async fn run(
             },
             wgpu::BindGroupEntry {
                 binding: 1,
+                resource: bvh_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
                 resource: storage_buffer.as_entire_binding(),
             },
         ],
     });
 
-    let mut rng = StdRng::from_entropy();
-
     let mut push_constants = ShaderConstants {
         width: width as u32,
         height: height as u32,
-        world_len: world.len() as u32,
         seed: rng.gen(),
     };
 

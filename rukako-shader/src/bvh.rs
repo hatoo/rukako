@@ -17,7 +17,6 @@ pub struct BVHNode {
 #[repr(C)]
 pub struct BVH<'a> {
     pub nodes: &'a [BVHNode],
-    pub len: u32,
 }
 
 #[derive(Default)]
