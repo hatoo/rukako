@@ -1,6 +1,6 @@
 use spirv_std::glam::Vec3;
 
-use crate::{material::EnumMaterial, ray::Ray};
+use crate::{bool::Bool32, material::EnumMaterial, ray::Ray};
 
 #[derive(Clone, Default)]
 pub struct HitRecord {
@@ -8,7 +8,7 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub material: EnumMaterial,
     pub t: f32,
-    pub front_face: u32,
+    pub front_face: Bool32,
 }
 
 impl HitRecord {
@@ -30,7 +30,7 @@ impl HitRecord {
             position,
             normal,
             t,
-            front_face: front_face as u32,
+            front_face: front_face.into(),
             material,
         }
     }

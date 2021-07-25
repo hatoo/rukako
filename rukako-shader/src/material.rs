@@ -153,7 +153,7 @@ impl<'a> Material for Dielectric<'a> {
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
     ) -> u32 {
-        let refraction_ratio = if hit_record.front_face != 0 {
+        let refraction_ratio = if hit_record.front_face.into() {
             1.0 / self.ir()
         } else {
             self.ir()
