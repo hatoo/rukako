@@ -5,6 +5,7 @@
     register_attr(spirv)
 )]
 
+use crate::bool::Bool32;
 use camera::Camera;
 use hittable::{HitRecord, Hittable};
 use material::{Material, Scatter};
@@ -19,6 +20,7 @@ use spirv_std::num_traits::FloatConst;
 
 use bytemuck::{Pod, Zeroable};
 
+pub mod bool;
 pub mod camera;
 pub mod hittable;
 pub mod material;
@@ -44,14 +46,14 @@ fn hit(
     t_min: f32,
     t_max: f32,
     hit_record: &mut HitRecord,
-) -> u32 {
+) -> Bool32 {
     let mut closest_so_far = t_max;
-    let mut hit = 0;
+    let mut hit = Bool32::FALSE;
 
     for i in 0..len {
-        if world[i].hit(ray, t_min, closest_so_far, hit_record) != 0 {
+        if world[i].hit(ray, t_min, closest_so_far, hit_record).into() {
             closest_so_far = hit_record.t;
-            hit = 1;
+            hit = Bool32::TRUE;
         }
     }
 
@@ -76,11 +78,15 @@ fn ray_color(
             0.001,
             f32::INFINITY,
             &mut hit_record,
-        ) != 0
+        )
+        .into()
         {
             let material = hit_record.material;
 
-            if material.scatter(&ray, &hit_record, rng, &mut scatter) != 0 {
+            if material
+                .scatter(&ray, &hit_record, rng, &mut scatter)
+                .into()
+            {
                 color *= scatter.color;
                 ray = scatter.ray;
             } else {
