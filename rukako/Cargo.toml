@@ -13,6 +13,7 @@ pollster = "0.2"
 image = "0.23"
 anyhow = "1.0"
 rand = "0.8"
+png = "0.16.8"
 
 rukako-shader = { path = "../rukako-shader" }
 spirv-std = { version = "0.4.0-alpha.10", features = ["glam"] }
