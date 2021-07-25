@@ -50,7 +50,7 @@ fn hit(
     let mut hit = 0;
 
     for i in 0..len {
-        if world[i].hit(ray, t_min, closest_so_far, hit_record) != 0 {
+        if world[i].hit(ray, t_min, closest_so_far, hit_record).into() {
             closest_so_far = hit_record.t;
             hit = 1;
         }
@@ -81,7 +81,10 @@ fn ray_color(
         {
             let material = hit_record.material;
 
-            if material.scatter(&ray, &hit_record, rng, &mut scatter) != 0 {
+            if material
+                .scatter(&ray, &hit_record, rng, &mut scatter)
+                .into()
+            {
                 color *= scatter.color;
                 ray = scatter.ray;
             } else {

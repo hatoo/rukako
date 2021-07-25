@@ -3,6 +3,7 @@ use spirv_std::glam::Vec3;
 use spirv_std::num_traits::Float;
 
 use crate::{
+    bool::Bool32,
     hittable::{HitRecord, Hittable},
     material::EnumMaterial,
 };
@@ -22,7 +23,7 @@ impl Hittable for Sphere {
         t_min: f32,
         t_max: f32,
         hit_record: &mut HitRecord,
-    ) -> u32 {
+    ) -> Bool32 {
         let oc = ray.origin - self.center;
         let a = ray.direction.length_squared();
         let half_b = oc.dot(ray.direction);
@@ -30,7 +31,7 @@ impl Hittable for Sphere {
 
         let discriminant = half_b * half_b - a * c;
         if discriminant < 0.0 {
-            return 0;
+            return Bool32::FALSE;
         }
         let sqrtd = discriminant.sqrt();
 
@@ -39,16 +40,16 @@ impl Hittable for Sphere {
         if root < t_min {
             root = (-half_b + sqrtd) / a;
             if root < t_min {
-                return 0;
+                return Bool32::FALSE;
             } else if t_max < root {
-                return 0;
+                return Bool32::FALSE;
             }
         } else if t_max < root {
             root = (-half_b + sqrtd) / a;
             if root < t_min {
-                return 0;
+                return Bool32::FALSE;
             } else if t_max < root {
-                return 0;
+                return Bool32::FALSE;
             }
         }
 
@@ -61,6 +62,6 @@ impl Hittable for Sphere {
             ray,
             self.matelial,
         );
-        1
+        Bool32::TRUE
     }
 }

@@ -3,6 +3,7 @@ use spirv_std::glam::{vec3, Vec3, Vec4, Vec4Swizzles};
 use spirv_std::num_traits::Float;
 
 use crate::{
+    bool::Bool32,
     hittable::HitRecord,
     math::{random_in_unit_sphere, IsNearZero},
     rand::DefaultRng,
@@ -22,7 +23,7 @@ pub trait Material {
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
-    ) -> u32;
+    ) -> Bool32;
 }
 
 #[derive(Clone, Copy, Default)]
@@ -80,10 +81,10 @@ impl<'a> Material for Lambertian<'a> {
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
-    ) -> u32 {
+    ) -> Bool32 {
         let scatter_direction = hit_record.normal + random_in_unit_sphere(rng).normalize();
 
-        let scatter_direction = if scatter_direction.is_near_zero() != 0 {
+        let scatter_direction = if scatter_direction.is_near_zero().into() {
             hit_record.normal
         } else {
             scatter_direction
@@ -99,7 +100,7 @@ impl<'a> Material for Lambertian<'a> {
             color: self.albedo(),
             ray: scatterd,
         };
-        1
+        Bool32::TRUE
     }
 }
 
@@ -120,7 +121,7 @@ impl<'a> Material for Metal<'a> {
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
-    ) -> u32 {
+    ) -> Bool32 {
         let reflected = reflect(ray.direction.normalize(), hit_record.normal);
         let scatterd = reflected + self.fuzz() * random_in_unit_sphere(rng);
         if scatterd.dot(hit_record.normal) > 0.0 {
@@ -132,9 +133,9 @@ impl<'a> Material for Metal<'a> {
                     time: ray.time,
                 },
             };
-            1
+            Bool32::TRUE
         } else {
-            0
+            Bool32::FALSE
         }
     }
 }
@@ -152,7 +153,7 @@ impl<'a> Material for Dielectric<'a> {
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
-    ) -> u32 {
+    ) -> Bool32 {
         let refraction_ratio = if hit_record.front_face.into() {
             1.0 / self.ir()
         } else {
@@ -180,7 +181,7 @@ impl<'a> Material for Dielectric<'a> {
                 time: ray.time,
             },
         };
-        1
+        Bool32::TRUE
     }
 }
 
@@ -191,7 +192,7 @@ impl Material for EnumMaterial {
         hit_record: &HitRecord,
         rng: &mut DefaultRng,
         scatter: &mut Scatter,
-    ) -> u32 {
+    ) -> Bool32 {
         match self.t {
             0 => Lambertian { data: &self.data }.scatter(ray, hit_record, rng, scatter),
             1 => Metal { data: &self.data }.scatter(ray, hit_record, rng, scatter),
