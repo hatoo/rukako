@@ -3,6 +3,11 @@ use spirv_std::glam::{vec3, Vec3};
 #[allow(unused_imports)]
 use spirv_std::num_traits::Float;
 
+use crate::aabb::AABB;
+
+#[cfg(not(target_arch = "spirv"))]
+pub mod bvh;
+
 #[derive(Clone, Copy, Zeroable, Pod)]
 #[repr(C)]
 pub struct SpherePod {
@@ -37,6 +42,13 @@ impl SpherePod {
 
     pub fn radius(&self) -> f32 {
         self.radius
+    }
+
+    pub fn bounding_box(&self, _time0: f32, _time1: f32) -> AABB {
+        AABB {
+            minimum: self.center() - vec3(self.radius, self.radius, self.radius),
+            maximum: self.center() + vec3(self.radius, self.radius, self.radius),
+        }
     }
 }
 

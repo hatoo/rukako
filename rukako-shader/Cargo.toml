@@ -11,3 +11,7 @@ crate-type = ["lib", "dylib"]
 [dependencies]
 spirv-std = { version = "0.4.0-alpha.10", features = ["glam"] }
 bytemuck = { version = "1.6.3", features = ["derive"] }
+
+[target.'cfg(not(target_arch = "spirv"))'.dependencies]
+rand = "0.8"
+float-ord = "0.3.1"

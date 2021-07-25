@@ -1,3 +1,5 @@
+use spirv_std::glam::UVec4;
+
 use crate::{
     aabb::AABB,
     bool::Bool32,
@@ -9,6 +11,7 @@ use crate::{
 #[repr(C)]
 pub struct BVHNode {
     aabb: AABB,
+    child: UVec4,
 }
 
 #[repr(C)]
@@ -47,7 +50,6 @@ impl<'a> BVH<'a> {
         mut t_max: f32,
         hit_record: &mut HitRecord,
         world: &[Sphere],
-        world_len: u32,
     ) -> Bool32 {
         let mut stack = Stack::default();
         let mut hit = Bool32::FALSE;
@@ -60,21 +62,22 @@ impl<'a> BVH<'a> {
                 continue;
             }
 
-            if i * 2 + 1 >= self.len {
-                let index = world_len - (self.len - i);
-                if world[index as usize]
-                    .hit(ray, t_min, t_max, hit_record)
-                    .into()
-                {
-                    t_max = hit_record.t;
-                    hit = Bool32::TRUE;
+            match self.nodes[i as usize].child.x {
+                0 => {
+                    stack.push(self.nodes[i as usize].child.y);
                 }
-            } else {
-                if i * 2 + 1 < self.len {
-                    stack.push(i * 2 + 1);
+                1 => {
+                    stack.push(self.nodes[i as usize].child.y);
+                    stack.push(self.nodes[i as usize].child.z);
                 }
-                if i * 2 + 2 < self.len {
-                    stack.push(i * 2 + 2);
+                _ => {
+                    if world[self.nodes[i as usize].child.w as usize]
+                        .hit(ray, t_min, t_max, hit_record)
+                        .into()
+                    {
+                        t_max = hit_record.t;
+                        hit = Bool32::TRUE;
+                    }
                 }
             }
         }

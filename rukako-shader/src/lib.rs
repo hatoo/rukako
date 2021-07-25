@@ -6,10 +6,10 @@
 )]
 
 use crate::bool::Bool32;
+use crate::rand::DefaultRng;
 use camera::Camera;
 use hittable::{HitRecord, Hittable};
 use material::{Material, Scatter};
-use rand::DefaultRng;
 use ray::Ray;
 use spirv_std::glam::{vec3, UVec3, Vec3, Vec4};
 #[cfg(not(target_arch = "spirv"))]
