@@ -5,7 +5,7 @@ use rand::prelude::StdRng;
 use rand::prelude::*;
 use rukako_shader::{
     pod::{EnumMaterialPod, Lambertian, Sphere},
-    ShaderConstants,
+    ShaderConstants, NUM_THREADS_X, NUM_THREADS_Y,
 };
 use spirv_std::glam::{vec3, Vec3};
 use wgpu::util::DeviceExt;
@@ -230,7 +230,11 @@ async fn run(
 
             push_constants.seed = rng.gen();
             cpass.set_push_constants(0, bytemuck::bytes_of(&push_constants));
-            cpass.dispatch((width as u32 + 7) / 8, (height as u32 + 7) / 8, 1);
+            cpass.dispatch(
+                (width as u32 + NUM_THREADS_X - 1) / NUM_THREADS_X,
+                (height as u32 + NUM_THREADS_Y - 1) / NUM_THREADS_Y,
+                1,
+            );
         }
         queue.submit(Some(encoder.finish()));
         device.poll(wgpu::Maintain::Wait);
