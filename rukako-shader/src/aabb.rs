@@ -16,7 +16,7 @@ impl AABB {
         {
             let inv_d = 1.0 / ray.direction.x;
             let mut t0 = (self.minimum.x - ray.origin.x) * inv_d;
-            let mut t1 = (self.maximum.x - ray.origin.y) * inv_d;
+            let mut t1 = (self.maximum.x - ray.origin.x) * inv_d;
 
             if inv_d < 0.0 {
                 swap(&mut t0, &mut t1);
